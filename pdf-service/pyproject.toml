@@ -1,0 +1,9 @@
+[project]
+name = "crossbill-pdf-service"
+version = "1.0.0"
+description = "Crossbill PDF rendering (WeasyPrint) + GSTR-1 6A assembly (pandas)"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

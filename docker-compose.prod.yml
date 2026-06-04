@@ -1,0 +1,30 @@
+# Production overlay. Use managed Postgres/Redis/Mongo + object storage in real deploys;
+# this file shows the topology and adds the nginx TLS-terminating edge.
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+services:
+  postgres:
+    restart: always
+  redis:
+    restart: always
+  mongo:
+    restart: always
+
+  pdf-service:
+    restart: always
+    ports: []                 # never publish the internal service in production
+
+  api:
+    restart: always
+    environment:
+      NODE_ENV: production
+    command: ["node", "dist/main.js"]
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on: [api]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: always

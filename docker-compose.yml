@@ -1,0 +1,59 @@
+# Local development parity: API + Python pdf-service + Postgres + Redis + Mongo.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: crossbill
+      POSTGRES_PASSWORD: crossbill
+      POSTGRES_DB: crossbill
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crossbill"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mongo:
+    image: mongo:7
+    ports: ["27017:27017"]
+    volumes:
+      - mongodata:/data/db
+
+  pdf-service:
+    build: ./pdf-service
+    env_file: ./.env
+    expose: ["8000"]          # internal only — not published to host in prod
+    ports: ["8000:8000"]      # convenience for local dev
+    volumes:
+      - storage:/data/storage
+
+  api:
+    build: ./api
+    env_file: ./.env
+    ports: ["3000:3000"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mongo:
+        condition: service_started
+      pdf-service:
+        condition: service_started
+
+volumes:
+  pgdata:
+  mongodata:
+  storage:

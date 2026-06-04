@@ -1,0 +1,59 @@
+# ───────────────────────────── Node / NestJS API ─────────────────────────────
+node_modules/
+dist/
+build/
+*.tsbuildinfo                 # stale incremental cache (caused the DI "can't resolve DataSource" bug)
+.npm/
+.eslintcache
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ───────────────────────────── Env / secrets ─────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ───────────────────────────── Python pdf-service ────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ───────────────────────────── Tests / coverage ──────────────────────────────
+coverage/
+.nyc_output/
+htmlcov/
+.coverage
+junit.xml
+
+# ───────────────────────── Storage / generated documents ─────────────────────
+storage/
+uploads/
+*.pdf
+*.xlsx
+!pdf-service/app/templates/*.html
+
+# ───────────────────────────── Docker / runtime ──────────────────────────────
+docker/postgres/data/
+*.pid
+
+# ───────────────────────────── OS / editor ───────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
