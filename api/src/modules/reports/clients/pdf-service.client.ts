@@ -18,7 +18,7 @@ export interface InvoicePdfRequest {
 
 /**
  * Server-to-server HTTP client to the Python pdf-service (design §6, §9).
- * Authenticated with the rotating internal service token — NOT end-user OAuth.
+ * Authenticated with the rotating internal service token.
  */
 @Injectable()
 export class PdfServiceClient {

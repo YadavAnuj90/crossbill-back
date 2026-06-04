@@ -1,8 +1,4 @@
-/**
- * Common SAC (Services Accounting Code) values for IT / software export services.
- * Defaults are per business profile and overridable per invoice item (design §12).
- * NOTE: confirm the exact applicable codes with a CA before production.
- */
+/** Common SAC codes for IT / software export services (design §12). Confirm with a CA. */
 export interface SacCode {
   code: string;
   description: string;

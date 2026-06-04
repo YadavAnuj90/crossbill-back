@@ -20,10 +20,9 @@ export class InvoiceItemDto {
 }
 
 export class CreateInvoiceDto {
-  @IsUUID()
+  @IsString()
   clientId: string;
 
-  /** Defaults to today if omitted. */
   @IsOptional() @IsDateString()
   invoiceDate?: string;
 

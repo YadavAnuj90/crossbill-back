@@ -3,14 +3,14 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import * as argon2 from 'argon2';
-import { randomUUID } from 'crypto';
+import { randomUUID, createHash } from 'crypto';
 import { UsersService } from '../users/users.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { Role } from '../../common/constants/roles.enum';
-import { RefreshToken } from './entities/refresh-token.entity';
+import { RefreshToken, RefreshTokenDocument } from './schemas/refresh-token.schema';
 import { RegisterDto } from './dto/register.dto';
 
 export interface TokenPair {
@@ -32,8 +32,7 @@ export class AuthService {
     private readonly orgs: OrganizationsService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
-    @InjectRepository(RefreshToken)
-    private readonly refreshTokens: Repository<RefreshToken>,
+    @InjectModel(RefreshToken.name) private readonly refreshTokens: Model<RefreshTokenDocument>,
   ) {}
 
   // ───────────────────────── Registration / login ─────────────────────────
@@ -51,11 +50,9 @@ export class AuthService {
       orgId: org.id,
     });
     await this.orgs.setOwner(org.id, user.id);
-    // Email verification is required before invoicing (design §9) — send link via Resend here.
     return this.issueTokens({ sub: user.id, org_id: org.id, role: user.role, email: user.email });
   }
 
-  /** Used by LocalStrategy. */
   async validateCredentials(email: string, password: string) {
     const user = await this.users.findByEmail(email);
     if (!user || !user.passwordHash) return null;
@@ -73,7 +70,6 @@ export class AuthService {
 
   // ───────────────────────── Google OAuth ─────────────────────────
 
-  /** Match or create the user by verified Google email, then issue our own tokens (design §9). */
   async loginWithGoogle(profile: { email: string; googleId: string; name?: string }): Promise<TokenPair> {
     let user = await this.users.findByEmail(profile.email);
     if (!user) {
@@ -104,11 +100,11 @@ export class AuthService {
     }
 
     const familyId = payload.fid!;
-    const hash = await this.hashToken(presentedToken);
-    const stored = await this.refreshTokens.findOne({
-      where: { userId: payload.sub, familyId },
-      order: { createdAt: 'DESC' },
-    });
+    const hash = this.hashToken(presentedToken);
+    const stored = await this.refreshTokens
+      .findOne({ userId: payload.sub, familyId })
+      .sort({ createdAt: -1 })
+      .exec();
 
     // Reuse detection: presented token doesn't match the latest issued one for this family.
     if (!stored || stored.revoked || stored.tokenHash !== hash) {
@@ -117,7 +113,7 @@ export class AuthService {
     }
 
     stored.revoked = true;
-    await this.refreshTokens.save(stored);
+    await stored.save();
 
     return this.issueTokens(
       { sub: payload.sub, org_id: payload.org_id, role: payload.role, email: payload.email },
@@ -127,7 +123,7 @@ export class AuthService {
 
   async logout(userId: string, familyId?: string) {
     if (familyId) await this.revokeFamily(familyId);
-    else await this.refreshTokens.update({ userId, revoked: false }, { revoked: true });
+    else await this.refreshTokens.updateMany({ userId, revoked: false }, { revoked: true }).exec();
   }
 
   // ───────────────────────── helpers ─────────────────────────
@@ -144,24 +140,21 @@ export class AuthService {
       { secret: this.config.get<string>('jwt.refreshSecret'), expiresIn: refreshTtl },
     );
 
-    await this.refreshTokens.save(
-      this.refreshTokens.create({
-        userId: payload.sub,
-        familyId,
-        tokenHash: await this.hashToken(refreshToken),
-        expiresAt: new Date(Date.now() + refreshTtl * 1000),
-      }),
-    );
+    await this.refreshTokens.create({
+      userId: payload.sub,
+      familyId,
+      tokenHash: this.hashToken(refreshToken),
+      expiresAt: new Date(Date.now() + refreshTtl * 1000),
+    });
 
     return { accessToken, refreshToken };
   }
 
   private async revokeFamily(familyId: string) {
-    await this.refreshTokens.update({ familyId }, { revoked: true });
+    await this.refreshTokens.updateMany({ familyId }, { revoked: true }).exec();
   }
 
-  private async hashToken(token: string): Promise<string> {
-    const { createHash } = await import('crypto');
+  private hashToken(token: string): string {
     return createHash('sha256').update(token).digest('hex');
   }
 }

@@ -5,22 +5,19 @@ import { DEFAULT_FX_RATE_BASIS, FxRateBasis } from '../../../common/constants/co
 
 export interface CapturedRate {
   rate: number;
-  source: string;     // e.g. 'CBIC_NOTIFIED' or 'RBI_REFERENCE'
-  rateDate: string;   // ISO date the rate applies to
+  source: string;
+  rateDate: string;
 }
 
 /**
- * Captures the currency→INR rate used on an invoice and stores it immutably on the invoice
- * (design §8, §12). Rates are cached in Redis per (basis, currency, date) to avoid hammering
- * the upstream source. The rate BASIS (RBI reference vs CBIC-notified) must be CA-confirmed.
- *
- * NOTE: the upstream fetch is stubbed here (returns a deterministic placeholder). Wiring it to
- * the live RBI/CBIC source is a Phase-1 follow-up gated on the CA sign-off of the rate basis.
+ * Captures the currency->INR rate used on an invoice and stores it immutably (design §8, §12).
+ * Rates are cached in Redis per (basis, currency, date). The upstream fetch is stubbed — wire
+ * the CA-confirmed RBI/CBIC source before production.
  */
 @Injectable()
 export class ExchangeRateService {
   private readonly logger = new Logger(ExchangeRateService.name);
-  private static readonly TTL_SECONDS = 60 * 60 * 12; // 12h
+  private static readonly TTL_SECONDS = 60 * 60 * 12;
 
   constructor(@Inject(REDIS_CLIENT) private readonly redis: Redis) {}
 
@@ -39,7 +36,6 @@ export class ExchangeRateService {
     return captured;
   }
 
-  /** Placeholder upstream. Replace with the CA-confirmed RBI/CBIC source. */
   private async fetchUpstream(currency: string, onDate: string, basis: FxRateBasis): Promise<number> {
     this.logger.warn(
       `Using STUB FX rate for ${currency} on ${onDate} (${basis}). Wire the real source before production.`,

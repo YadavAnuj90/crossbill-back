@@ -9,11 +9,9 @@ class EnvVars {
   @IsInt() @Min(1)
   API_PORT: number = 3000;
 
+  // MongoDB is the primary datastore.
   @IsString()
-  DATABASE_URL!: string;
-
-  @IsOptional() @IsString()
-  MONGO_URI?: string;
+  MONGO_URI!: string;
 
   @IsString()
   REDIS_URL!: string;

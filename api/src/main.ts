@@ -15,10 +15,8 @@ async function bootstrap() {
   const config = app.get(ConfigService);
   const reflector = app.get(Reflector);
 
-  // Versioned API prefix (design §14).
   app.setGlobalPrefix('api/v1');
 
-  // Security hardening (design §17).
   app.use(helmet());
   app.use(cookieParser());
   app.enableCors({
@@ -26,11 +24,10 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // Cross-cutting concerns.
   app.useGlobalPipes(globalValidationPipe);
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new LoggingInterceptor(), new TransformInterceptor());
-  app.useGlobalGuards(new JwtAuthGuard(reflector)); // protected-by-default; @Public() opts out
+  app.useGlobalGuards(new JwtAuthGuard(reflector));
 
   app.enableShutdownHooks();
 

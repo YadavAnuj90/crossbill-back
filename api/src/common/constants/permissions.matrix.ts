@@ -1,9 +1,6 @@
 import { Role } from './roles.enum';
 
-/**
- * Central permission matrix (design §10): action -> allowed roles.
- * Keeping the rules in one place makes them testable and auditable.
- */
+/** Central permission matrix (design §10): action -> allowed roles. */
 export type Action =
   | 'client:read' | 'client:write'
   | 'invoice:read' | 'invoice:write'

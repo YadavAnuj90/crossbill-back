@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { MongooseModule } from '@nestjs/mongoose';
 import { BullModule } from '@nestjs/bullmq';
-import { Invoice } from './entities/invoice.entity';
-import { InvoiceItem } from './entities/invoice-item.entity';
+import { Invoice, InvoiceSchema } from './schemas/invoice.schema';
+import { Counter, CounterSchema } from './schemas/counter.schema';
 import { InvoicesService } from './invoices.service';
 import { InvoicesController } from './invoices.controller';
 import { InvoiceNumberService } from './services/invoice-number.service';
@@ -13,7 +13,10 @@ import { QUEUES } from '../../queue/queue.constants';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Invoice, InvoiceItem]),
+    MongooseModule.forFeature([
+      { name: Invoice.name, schema: InvoiceSchema },
+      { name: Counter.name, schema: CounterSchema },
+    ]),
     BullModule.registerQueue({ name: QUEUES.PDF }),
     ClientsModule,
     UsersModule,

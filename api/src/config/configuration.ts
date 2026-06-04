@@ -1,11 +1,10 @@
 /** Central typed configuration, loaded from environment (design §21). */
 export default () => ({
   env: process.env.NODE_ENV ?? 'development',
-  port: parseInt(process.env.API_PORT ?? '3000', 10),
+  port: parseInt(process.env.API_PORT ?? '4000', 10),
   appUrl: process.env.APP_URL ?? 'http://localhost:3001',
-  apiUrl: process.env.API_URL ?? 'http://localhost:3000',
+  apiUrl: process.env.API_URL ?? 'http://localhost:4000',
 
-  database: { url: process.env.DATABASE_URL },
   mongo: { uri: process.env.MONGO_URI },
   redis: { url: process.env.REDIS_URL ?? 'redis://localhost:6379' },
 
@@ -20,8 +19,7 @@ export default () => ({
     clientId: process.env.GOOGLE_CLIENT_ID ?? '',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
     callbackUrl:
-      process.env.GOOGLE_CALLBACK_URL ??
-      'http://localhost:3000/api/v1/auth/google/callback',
+      process.env.GOOGLE_CALLBACK_URL ?? 'http://localhost:4000/api/v1/auth/google/callback',
   },
 
   pdfService: {
@@ -34,5 +32,3 @@ export default () => ({
     from: process.env.EMAIL_FROM ?? 'Crossbill <no-reply@crossbill.app>',
   },
 });
-
-export type AppConfig = ReturnType<typeof import('./configuration').default>;

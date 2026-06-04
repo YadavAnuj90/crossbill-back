@@ -8,7 +8,7 @@ import request from 'supertest';
  * (Postgres/Redis/Mongo/pdf-service) and run in CI against ephemeral services.
  */
 describe('Health (e2e)', () => {
-  let app: INestApplication;
+  let app!: INestApplication;
 
   // Skipped unless the full stack is available; documents the intended assertion.
   it.skip('GET /api/v1/health/live returns ok', async () => {

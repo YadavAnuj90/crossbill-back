@@ -1,55 +1,50 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from './entities/user.entity';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectRepository(User)
-    private readonly users: Repository<User>,
-  ) {}
+  constructor(@InjectModel(User.name) private readonly users: Model<UserDocument>) {}
 
   findByEmail(email: string) {
-    return this.users.findOne({ where: { email: email.toLowerCase() } });
+    return this.users.findOne({ email: email.toLowerCase() }).exec();
   }
 
   findById(id: string) {
-    return this.users.findOne({ where: { id } });
+    return this.users.findById(id).exec();
   }
 
-  async create(dto: CreateUserDto & { passwordHash?: string | null; orgId: string }): Promise<User> {
-    const user = this.users.create({
+  create(dto: CreateUserDto & { passwordHash?: string | null; orgId: string }) {
+    return this.users.create({
       email: dto.email.toLowerCase(),
       passwordHash: dto.passwordHash ?? null,
       googleId: dto.googleId ?? null,
       legalName: dto.legalName ?? null,
       orgId: dto.orgId,
     });
-    return this.users.save(user);
   }
 
   async markEmailVerified(id: string) {
-    await this.users.update({ id }, { emailVerified: true });
+    await this.users.findByIdAndUpdate(id, { emailVerified: true }).exec();
   }
 
   async linkGoogle(id: string, googleId: string) {
-    await this.users.update({ id }, { googleId, emailVerified: true });
+    await this.users.findByIdAndUpdate(id, { googleId, emailVerified: true }).exec();
   }
 
-  async updateProfile(id: string, dto: UpdateProfileDto): Promise<User> {
-    const user = await this.findById(id);
+  async updateProfile(id: string, dto: UpdateProfileDto): Promise<UserDocument> {
+    const user = await this.users.findByIdAndUpdate(id, dto, { new: true }).exec();
     if (!user) throw new NotFoundException('User not found');
-    Object.assign(user, dto);
-    return this.users.save(user);
+    return user;
   }
 
-  /** Safe profile projection — never returns password/token hashes. */
-  toProfile(user: User) {
-    const { passwordHash, ...safe } = user;
-    void passwordHash;
-    return safe;
+  /** Safe profile projection — never returns the password hash. */
+  toProfile(user: UserDocument) {
+    const obj: any = user.toJSON();
+    delete obj.passwordHash;
+    return obj;
   }
 }

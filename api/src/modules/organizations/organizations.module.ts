@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Organization } from './entities/organization.entity';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Organization, OrganizationSchema } from './schemas/organization.schema';
 import { OrganizationsService } from './organizations.service';
 import { OrganizationsController } from './organizations.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Organization])],
+  imports: [MongooseModule.forFeature([{ name: Organization.name, schema: OrganizationSchema }])],
   providers: [OrganizationsService],
   controllers: [OrganizationsController],
   exports: [OrganizationsService],

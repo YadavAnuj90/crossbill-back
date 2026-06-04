@@ -12,10 +12,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     const status =
       exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
-
     const payload =
       exception instanceof HttpException ? exception.getResponse() : 'Internal server error';
-
     const message =
       typeof payload === 'string' ? payload : (payload as any).message ?? 'Error';
 
@@ -27,11 +25,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     res.status(status).json({
       success: false,
-      error: {
-        code: status,
-        message,
-        correlationId: req.correlationId,
-      },
+      error: { code: status, message, correlationId: req.correlationId },
       timestamp: new Date().toISOString(),
       path: req.url,
     });

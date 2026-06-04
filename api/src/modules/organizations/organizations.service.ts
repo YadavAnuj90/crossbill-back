@@ -1,26 +1,24 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Organization } from './entities/organization.entity';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Organization, OrganizationDocument } from './schemas/organization.schema';
 
 @Injectable()
 export class OrganizationsService {
   constructor(
-    @InjectRepository(Organization)
-    private readonly orgs: Repository<Organization>,
+    @InjectModel(Organization.name) private readonly orgs: Model<OrganizationDocument>,
   ) {}
 
   /** Creates a personal org for a new user; the user becomes its OWNER. */
-  async createForOwner(name: string): Promise<Organization> {
-    const org = this.orgs.create({ name, plan: 'free' });
-    return this.orgs.save(org);
+  createForOwner(name: string) {
+    return this.orgs.create({ name, plan: 'free' });
   }
 
   findById(id: string) {
-    return this.orgs.findOne({ where: { id } });
+    return this.orgs.findById(id).exec();
   }
 
   async setOwner(orgId: string, ownerId: string) {
-    await this.orgs.update({ id: orgId }, { ownerId });
+    await this.orgs.findByIdAndUpdate(orgId, { ownerId }).exec();
   }
 }

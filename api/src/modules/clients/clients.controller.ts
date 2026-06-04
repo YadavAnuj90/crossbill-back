@@ -29,7 +29,7 @@ export class ClientsController {
   @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   update(
     @CurrentUser() user: AuthPrincipal,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: UpdateClientDto,
   ) {
     return this.clients.update(user.orgId, id, dto);
@@ -37,7 +37,7 @@ export class ClientsController {
 
   @Delete(':id')
   @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
-  remove(@CurrentUser() user: AuthPrincipal, @Param('id', ParseUUIDPipe) id: string) {
+  remove(@CurrentUser() user: AuthPrincipal, @Param('id') id: string) {
     return this.clients.remove(user.orgId, id);
   }
 }

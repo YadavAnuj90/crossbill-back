@@ -6,25 +6,25 @@ export type DocumentMetaDocument = HydratedDocument<DocumentMeta>;
 /** Uploaded FIRC/e-FIRA file metadata: virus-scan status + checksums (design §8). */
 @Schema({ collection: 'document_meta', timestamps: true })
 export class DocumentMeta {
-  @Prop({ required: true, index: true })
+  @Prop({ type: String, required: true, index: true })
   orgId: string;
 
-  @Prop()
+  @Prop({ type: String })
   invoiceId?: string;
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   storageKey: string;
 
-  @Prop()
+  @Prop({ type: String })
   contentType?: string;
 
-  @Prop()
+  @Prop({ type: Number })
   sizeBytes?: number;
 
-  @Prop()
+  @Prop({ type: String })
   checksumSha256?: string;
 
-  @Prop({ default: 'pending', enum: ['pending', 'clean', 'infected'] })
+  @Prop({ type: String, default: 'pending', enum: ['pending', 'clean', 'infected'] })
   scanStatus: string;
 }
 

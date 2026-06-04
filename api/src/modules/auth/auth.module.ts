@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { MongooseModule } from '@nestjs/mongoose';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
-import { RefreshToken } from './entities/refresh-token.entity';
+import { RefreshToken, RefreshTokenSchema } from './schemas/refresh-token.schema';
 import { UsersModule } from '../users/users.module';
 import { OrganizationsModule } from '../organizations/organizations.module';
 
@@ -15,7 +15,7 @@ import { OrganizationsModule } from '../organizations/organizations.module';
   imports: [
     PassportModule,
     JwtModule.register({}),
-    TypeOrmModule.forFeature([RefreshToken]),
+    MongooseModule.forFeature([{ name: RefreshToken.name, schema: RefreshTokenSchema }]),
     UsersModule,
     OrganizationsModule,
   ],

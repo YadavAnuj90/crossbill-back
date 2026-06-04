@@ -32,8 +32,6 @@ export class PdfProcessor extends WorkerHost {
 
     const invoice = await this.invoices.findOneScoped(orgId, invoiceId);
     const client = await this.clients.findOneScoped(orgId, invoice.clientId);
-    const sellerUser = (await this.users.findByEmail('')) ?? null; // resolved via org owner in prod
-    void sellerUser;
 
     const { url } = await this.pdfClient.generateInvoice({
       invoiceId: invoice.id,

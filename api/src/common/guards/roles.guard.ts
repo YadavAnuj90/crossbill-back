@@ -3,10 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { Role } from '../constants/roles.enum';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 
-/**
- * Reads the JWT's role + org_id and checks against @Roles(...) (design §10).
- * Resource-level org_id ownership is additionally enforced in services.
- */
+/** Reads the JWT's role + orgId and checks against @Roles(...) (design §10). */
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}

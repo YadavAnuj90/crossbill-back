@@ -3,10 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { QUEUES } from './queue.constants';
 
-/**
- * Redis-backed BullMQ registration (design §6, §13).
- * All jobs are idempotent and retried with exponential backoff; failures land in a DLQ.
- */
+/** Redis-backed BullMQ registration (design §6, §13). */
 @Global()
 @Module({
   imports: [
@@ -25,7 +22,7 @@ import { QUEUES } from './queue.constants';
             attempts: 5,
             backoff: { type: 'exponential', delay: 2000 },
             removeOnComplete: 1000,
-            removeOnFail: false, // keep for DLQ inspection
+            removeOnFail: false,
           },
         };
       },

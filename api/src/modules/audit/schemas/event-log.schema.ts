@@ -3,19 +3,19 @@ import { HydratedDocument } from 'mongoose';
 
 export type EventLogDocument = HydratedDocument<EventLog>;
 
-/** Audit trail of security-relevant user/system actions (design §8, §17). */
+/** Audit trail of user/system actions (design §8, §17). */
 @Schema({ collection: 'event_logs', timestamps: { createdAt: true, updatedAt: false } })
 export class EventLog {
-  @Prop({ required: true, index: true })
+  @Prop({ type: String, required: true, index: true })
   action: string;
 
-  @Prop({ index: true })
+  @Prop({ type: String, index: true })
   orgId?: string;
 
-  @Prop()
+  @Prop({ type: String })
   userId?: string;
 
-  @Prop()
+  @Prop({ type: String })
   resourceId?: string;
 
   @Prop({ type: Object })

@@ -19,7 +19,6 @@ export class AuthController {
     private readonly config: ConfigService,
   ) {}
 
-  // ── email/password ──
   @Public()
   @Post('register')
   async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
@@ -35,7 +34,6 @@ export class AuthController {
     return this.respondWithTokens(tokens, res);
   }
 
-  // ── Google OAuth ──
   @Public()
   @Get('google')
   @UseGuards(AuthGuard('google'))
@@ -49,12 +47,10 @@ export class AuthController {
   async googleCallback(@Req() req: Request, @Res() res: Response) {
     const tokens = await this.auth.loginWithGoogle(req.user as any);
     this.setRefreshCookie(tokens.refreshToken, res);
-    // Hand the access token back to the SPA.
     const appUrl = this.config.get<string>('appUrl');
     res.redirect(`${appUrl}/auth/callback#access_token=${tokens.accessToken}`);
   }
 
-  // ── refresh / logout ──
   @Public()
   @Post('refresh')
   @HttpCode(200)
@@ -72,7 +68,6 @@ export class AuthController {
     return { loggedOut: true };
   }
 
-  // ── helpers ──
   private respondWithTokens(tokens: TokenPair, res: Response) {
     this.setRefreshCookie(tokens.refreshToken, res);
     return { accessToken: tokens.accessToken };

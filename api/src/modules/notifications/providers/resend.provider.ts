@@ -7,10 +7,7 @@ export interface EmailMessage {
   html: string;
 }
 
-/**
- * Resend transactional/reminder email provider (design §6, §13).
- * Sends via Resend's REST API when RESEND_API_KEY is set; otherwise logs (dev mode).
- */
+/** Resend transactional/reminder email provider (design §6, §13). Logs in dev when unset. */
 @Injectable()
 export class ResendProvider {
   private readonly logger = new Logger(ResendProvider.name);

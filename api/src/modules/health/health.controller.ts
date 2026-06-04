@@ -1,7 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import {
-  HealthCheck, HealthCheckService, TypeOrmHealthIndicator, HttpHealthIndicator,
-  MongooseHealthIndicator,
+  HealthCheck, HealthCheckService, HttpHealthIndicator, MongooseHealthIndicator,
 } from '@nestjs/terminus';
 import { ConfigService } from '@nestjs/config';
 import { Public } from '../../common/decorators/public.decorator';
@@ -11,7 +10,6 @@ import { Public } from '../../common/decorators/public.decorator';
 export class HealthController {
   constructor(
     private readonly health: HealthCheckService,
-    private readonly db: TypeOrmHealthIndicator,
     private readonly mongo: MongooseHealthIndicator,
     private readonly http: HttpHealthIndicator,
     private readonly config: ConfigService,
@@ -29,7 +27,6 @@ export class HealthController {
   ready() {
     const pdfUrl = this.config.get<string>('pdfService.url');
     return this.health.check([
-      () => this.db.pingCheck('postgres'),
       () => this.mongo.pingCheck('mongo'),
       () => this.http.pingCheck('pdf-service', `${pdfUrl}/health`),
     ]);

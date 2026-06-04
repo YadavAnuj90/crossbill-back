@@ -3,7 +3,6 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import configuration from './config/configuration';
 import { validateEnv } from './config/env.validation';
-import { PostgresModule } from './database/postgres.module';
 import { MongoModule } from './database/mongo.module';
 import { RedisModule } from './common/redis/redis.module';
 import { QueueModule } from './queue/queue.module';
@@ -20,14 +19,9 @@ import { HealthModule } from './modules/health/health.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      load: [configuration],
-      validate: validateEnv,
-    }),
+    ConfigModule.forRoot({ isGlobal: true, load: [configuration], validate: validateEnv }),
 
-    // Infrastructure
-    PostgresModule,
+    // Infrastructure — MongoDB (primary store), Redis (queue + cache).
     MongoModule,
     RedisModule,
     QueueModule,
@@ -43,9 +37,6 @@ import { HealthModule } from './modules/health/health.module';
     AuditModule,
     HealthModule,
   ],
-  providers: [
-    // JwtAuthGuard is applied globally in main.ts; RolesGuard runs after it.
-    { provide: APP_GUARD, useClass: RolesGuard },
-  ],
+  providers: [{ provide: APP_GUARD, useClass: RolesGuard }],
 })
 export class AppModule {}

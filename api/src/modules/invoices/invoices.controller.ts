@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Get, NotFoundException, Param, ParseUUIDPipe, Patch, Post, Query, Res,
+  Body, Controller, Get, NotFoundException, Param, Patch, Post, Query, Res,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -28,27 +28,27 @@ export class InvoicesController {
 
   @Get(':id')
   @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER, Role.ACCOUNTANT)
-  findOne(@CurrentUser() user: AuthPrincipal, @Param('id', ParseUUIDPipe) id: string) {
-    return this.invoices.findOneScoped(user.orgId, id);
+  async findOne(@CurrentUser() user: AuthPrincipal, @Param('id') id: string) {
+    const inv = await this.invoices.findOneScoped(user.orgId, id);
+    return inv.toJSON();
   }
 
   @Patch(':id')
   @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   update(
     @CurrentUser() user: AuthPrincipal,
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: UpdateInvoiceDto,
   ) {
     return this.invoices.update(user.orgId, id, dto);
   }
 
-  /** Returns the stored PDF URL (signed object-store URL in production) (design §15, §17). */
   @Get(':id/pdf')
   @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER, Role.ACCOUNTANT)
   async pdf(
     @CurrentUser() user: AuthPrincipal,
-    @Param('id', ParseUUIDPipe) id: string,
-    @Res({ passthrough: true }) res: Response,
+    @Param('id') id: string,
+    @Res({ passthrough: true }) _res: Response,
   ) {
     const invoice = await this.invoices.findOneScoped(user.orgId, id);
     if (!invoice.pdfUrl) {

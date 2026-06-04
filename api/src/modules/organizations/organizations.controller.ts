@@ -20,7 +20,6 @@ export class OrganizationsController {
   @Post('invite')
   @Roles(Role.OWNER, Role.ADMIN)
   invite(@CurrentUser() user: AuthPrincipal, @Body() dto: InviteMemberDto) {
-    // Phase 2 (Teams): create a pending membership + send Resend invite email.
     return { invited: dto.email, role: dto.role, orgId: user.orgId, status: 'pending' };
   }
 }

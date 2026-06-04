@@ -18,10 +18,6 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   async validate(_accessToken: string, _refreshToken: string, profile: Profile, done: VerifyCallback) {
     const email = profile.emails?.[0]?.value;
     if (!email) return done(new Error('Google account has no email'), undefined);
-    done(null, {
-      email,
-      googleId: profile.id,
-      name: profile.displayName,
-    });
+    done(null, { email, googleId: profile.id, name: profile.displayName });
   }
 }

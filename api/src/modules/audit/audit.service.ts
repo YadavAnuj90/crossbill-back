@@ -22,7 +22,6 @@ export class AuditService {
     try {
       await this.eventLog.create(entry);
     } catch (err: any) {
-      // Audit must never break the request path; surface for alerting instead.
       this.logger.error(`Failed to write audit log for ${entry.action}: ${err.message}`);
     }
   }
