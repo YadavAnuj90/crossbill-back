@@ -6,16 +6,26 @@ import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { PaginationDto, Paginated } from '../../common/dto/pagination.dto';
 
-/**
- * All queries are scoped by orgId (design §10 multi-tenancy guardrail) — orgId always comes
- * from the authenticated principal, never from client-supplied input.
- */
+/** All queries are scoped by orgId (design §10). Supports foreign (export) + domestic (GST) clients. */
 @Injectable()
 export class ClientsService {
   constructor(@InjectModel(Client.name) private readonly clients: Model<ClientDocument>) {}
 
+  private normalize(dto: Partial<CreateClientDto>): Record<string, any> {
+    const out: Record<string, any> = { ...dto };
+    if (dto.type === 'foreign') {
+      if (dto.country) out.country = dto.country.toUpperCase();
+      out.stateCode = null; out.gstin = null; out.customerType = null;
+    } else if (dto.type === 'domestic') {
+      out.country = null;
+      if (dto.gstin) out.gstin = dto.gstin.toUpperCase();
+      if (dto.customerType === 'b2c') out.gstin = null; // B2C has no GSTIN
+    }
+    return out;
+  }
+
   create(orgId: string, dto: CreateClientDto) {
-    return this.clients.create({ ...dto, country: dto.country.toUpperCase(), orgId });
+    return this.clients.create({ ...this.normalize(dto), orgId });
   }
 
   async list(orgId: string, page: PaginationDto): Promise<Paginated<any>> {
@@ -36,9 +46,7 @@ export class ClientsService {
   }
 
   async update(orgId: string, id: string, dto: UpdateClientDto) {
-    const patch: any = { ...dto };
-    if (dto.country) patch.country = dto.country.toUpperCase();
-    const client = await this.clients.findOneAndUpdate({ _id: id, orgId }, patch, { new: true }).exec();
+    const client = await this.clients.findOneAndUpdate({ _id: id, orgId }, this.normalize(dto), { new: true }).exec();
     if (!client) throw new NotFoundException('Client not found');
     return client;
   }

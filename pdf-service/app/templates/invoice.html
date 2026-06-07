@@ -9,7 +9,8 @@
   .header { display: flex; justify-content: space-between; align-items: flex-start; }
   .brand { font-size: 22px; font-weight: 700; color: #0b5; }
   .muted { color: #666; }
-  h1 { font-size: 16px; margin: 0 0 4px; }
+  .pill { display:inline-block; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+          padding:2px 8px; border-radius:999px; background:#ecfdf5; color:#047857; }
   .meta td { padding: 2px 8px 2px 0; }
   .parties { display: flex; gap: 24px; margin: 18px 0; }
   .party { flex: 1; border: 1px solid #e2e2e2; border-radius: 6px; padding: 10px; }
@@ -18,9 +19,9 @@
   table.items th { background: #f4f6f8; text-align: left; padding: 8px; font-size: 10px; }
   table.items td { padding: 8px; border-bottom: 1px solid #eee; }
   .right { text-align: right; }
-  .totals { margin-top: 12px; width: 40%; margin-left: auto; }
+  .totals { margin-top: 12px; width: 46%; margin-left: auto; }
   .totals td { padding: 4px 8px; }
-  .totals .grand { font-weight: 700; border-top: 2px solid #333; }
+  .totals .grand { font-weight: 700; border-top: 2px solid #333; font-size: 12px; }
   .declaration { margin-top: 22px; padding: 10px; background: #f7faf8; border-left: 3px solid #0b5; font-size: 10px; }
   .fx { margin-top: 8px; font-size: 10px; color: #555; }
   footer { margin-top: 28px; font-size: 9px; color: #999; }
@@ -30,33 +31,42 @@
   <div class="header">
     <div>
       <div class="brand">Crossbill</div>
-      <div class="muted">Export Invoice</div>
+      <div class="muted">{{ 'Tax Invoice' if inv.is_domestic else 'Export Invoice' }}</div>
     </div>
     <table class="meta">
       <tr><td class="muted">Invoice No.</td><td><strong>{{ inv.number }}</strong></td></tr>
       <tr><td class="muted">Date</td><td>{{ inv.invoiceDate }}</td></tr>
       <tr><td class="muted">Place of supply</td><td>{{ inv.placeOfSupply }}</td></tr>
+      <tr><td></td><td><span class="pill">{{ 'Domestic · GST' if inv.is_domestic else 'Export · 0% IGST' }}</span></td></tr>
     </table>
   </div>
 
   <div class="parties">
     <div class="party">
-      <h3>Exporter</h3>
+      <h3>Supplier</h3>
       <div>{{ inv.seller.get('legalName', 'Your registered name') }}</div>
       <div class="muted">GSTIN: {{ inv.seller.get('gstin', '—') }}</div>
     </div>
     <div class="party">
-      <h3>Foreign client</h3>
+      <h3>{{ 'Bill to' if inv.is_domestic else 'Foreign client' }}</h3>
       <div>{{ inv.client.get('name', '') }}</div>
       <div class="muted">{{ inv.client.get('address', '') }}</div>
-      <div class="muted">{{ inv.client.get('country', '') }}</div>
+      {% if inv.is_domestic %}
+        <div class="muted">GSTIN: {{ inv.client.get('gstin') or 'Unregistered (B2C)' }}</div>
+      {% else %}
+        <div class="muted">{{ inv.client.get('country', '') }}</div>
+      {% endif %}
     </div>
   </div>
 
   <table class="items">
     <thead>
-      <tr><th>Description</th><th>SAC</th><th class="right">Qty</th>
-          <th class="right">Unit ({{ inv.currency }})</th><th class="right">Total ({{ inv.currency }})</th></tr>
+      <tr>
+        <th>Description</th><th>{{ 'HSN/SAC' if inv.is_domestic else 'SAC' }}</th>
+        <th class="right">Qty</th><th class="right">Unit ({{ inv.currency }})</th>
+        {% if inv.is_domestic %}<th class="right">GST %</th>{% endif %}
+        <th class="right">Total ({{ inv.currency }})</th>
+      </tr>
     </thead>
     <tbody>
       {% for item in inv['items'] %}
@@ -65,6 +75,7 @@
         <td>{{ item.sacCode }}</td>
         <td class="right">{{ item.quantity }}</td>
         <td class="right">{{ item.unitAmount }}</td>
+        {% if inv.is_domestic %}<td class="right">{{ item.gstRate }}%</td>{% endif %}
         <td class="right">{{ item.lineTotal }}</td>
       </tr>
       {% endfor %}
@@ -72,21 +83,32 @@
   </table>
 
   <table class="totals">
-    <tr><td>Subtotal</td><td class="right">{{ inv.currency }} {{ inv.subtotal }}</td></tr>
-    <tr class="grand"><td>Total</td><td class="right">{{ inv.currency }} {{ inv.subtotal }}</td></tr>
-    <tr><td class="muted">INR equivalent</td><td class="right">₹ {{ inv.inrEquivalent }}</td></tr>
+    <tr><td>Taxable value</td><td class="right">{{ inv.currency }} {{ inv.subtotal }}</td></tr>
+    {% if inv.is_domestic %}
+      {% if inv.taxType == 'CGST_SGST' %}
+        <tr><td>CGST</td><td class="right">{{ inv.currency }} {{ inv.cgstAmount }}</td></tr>
+        <tr><td>SGST</td><td class="right">{{ inv.currency }} {{ inv.sgstAmount }}</td></tr>
+      {% else %}
+        <tr><td>IGST</td><td class="right">{{ inv.currency }} {{ inv.igstAmount }}</td></tr>
+      {% endif %}
+      <tr class="grand"><td>Total</td><td class="right">{{ inv.currency }} {{ inv.grandTotal }}</td></tr>
+    {% else %}
+      <tr class="grand"><td>Total</td><td class="right">{{ inv.currency }} {{ inv.subtotal }}</td></tr>
+      <tr><td class="muted">INR equivalent</td><td class="right">₹ {{ inv.inrEquivalent }}</td></tr>
+    {% endif %}
   </table>
 
+  {% if not inv.is_domestic %}
   <div class="fx">
-    Exchange rate: 1 {{ inv.currency }} = ₹ {{ inv.fxRate }}
-    (source: {{ inv.fxRateSource }}, as of {{ inv.fxRateDate }})
+    Exchange rate: 1 {{ inv.currency }} = ₹ {{ inv.fxRate }} (source: {{ inv.fxRateSource }}, as of {{ inv.fxRateDate }})
   </div>
+  {% endif %}
 
   <div class="declaration">{{ inv.declarationText }}</div>
 
   <footer>
-    Generated by Crossbill. Compliance fields are auto-filled and must be reviewed per your CA's
-    guidance. This is a tax document — retain for your GST/FEMA records.
+    Generated by Crossbill · Built by Anujali Technologies. Compliance fields are auto-filled and
+    should be reviewed per your CA's guidance. This is a tax document — retain for your records.
   </footer>
 </body>
 </html>

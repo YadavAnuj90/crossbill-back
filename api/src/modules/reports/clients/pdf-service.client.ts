@@ -4,11 +4,19 @@ import axios, { AxiosInstance } from 'axios';
 
 export interface InvoicePdfRequest {
   invoiceId: string;
+  type: string;                 // 'export' | 'domestic'
   number: string;
   invoiceDate: string;
   currency: string;
   fxRate: string;
   inrEquivalent: string;
+  subtotal: string;
+  taxType: string;
+  cgstAmount: string;
+  sgstAmount: string;
+  igstAmount: string;
+  taxTotal: string;
+  grandTotal: string;
   declarationText: string;
   placeOfSupply: string;
   seller: Record<string, unknown>;
@@ -16,10 +24,7 @@ export interface InvoicePdfRequest {
   items: Array<Record<string, unknown>>;
 }
 
-/**
- * Server-to-server HTTP client to the Python pdf-service (design §6, §9).
- * Authenticated with the rotating internal service token.
- */
+/** Server-to-server client to the Python pdf-service (design §6, §9), internal-token auth. */
 @Injectable()
 export class PdfServiceClient {
   private readonly logger = new Logger(PdfServiceClient.name);

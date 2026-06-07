@@ -42,7 +42,7 @@ services:
   api:
     build: ./api
     env_file: ./.env
-    ports: ["3000:3000"]
+    ports: ["4000:4000"]
     depends_on:
       postgres:
         condition: service_healthy

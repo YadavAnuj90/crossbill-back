@@ -22,6 +22,8 @@ export default () => ({
       process.env.GOOGLE_CALLBACK_URL ?? 'http://localhost:4000/api/v1/auth/google/callback',
   },
 
+  storageDir: process.env.STORAGE_DIR ?? './storage',
+
   pdfService: {
     url: process.env.PDF_SERVICE_URL ?? 'http://localhost:8000',
     internalToken: process.env.INTERNAL_SERVICE_TOKEN ?? 'dev-internal-token',

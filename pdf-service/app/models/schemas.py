@@ -8,17 +8,26 @@ class InvoiceItem(BaseModel):
     quantity: str
     unitAmount: str
     lineTotal: str
+    gstRate: float = 0
 
 
 class InvoicePdfRequest(BaseModel):
     invoiceId: str
+    type: str = "export"              # 'export' | 'domestic'
     number: str
     invoiceDate: str
     currency: str
-    fxRate: str
-    inrEquivalent: str
-    declarationText: str
-    placeOfSupply: str
+    fxRate: str = "1.000000"
+    inrEquivalent: str = "0.00"
+    subtotal: str = "0.00"
+    taxType: str = "LUT_ZERO"
+    cgstAmount: str = "0.00"
+    sgstAmount: str = "0.00"
+    igstAmount: str = "0.00"
+    taxTotal: str = "0.00"
+    grandTotal: str = "0.00"
+    declarationText: str = ""
+    placeOfSupply: str = ""
     seller: dict = Field(default_factory=dict)
     client: dict = Field(default_factory=dict)
     items: list[InvoiceItem]
@@ -32,5 +41,4 @@ class GeneratedDoc(BaseModel):
 class GstrExportRequest(BaseModel):
     orgId: str
     financialYear: str
-    # In production the API passes the invoice rows; the stub synthesises an empty template.
     invoices: list[dict] = Field(default_factory=list)

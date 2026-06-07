@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -14,12 +14,11 @@ import { PaginationDto, Paginated } from '../../common/dto/pagination.dto';
 import { financialYearOf, femaDueDate } from '../../common/constants/financial-year';
 import { renderDeclaration, PLACE_OF_SUPPLY_EXPORT } from '../../common/constants/compliance';
 import { DEFAULT_SAC } from '../../common/constants/sac-codes';
+import { agingOf, FemaAging } from '../../common/constants/fema';
+import { computeGst, DEFAULT_GST_RATE, DOMESTIC_TAX_NOTE } from '../../common/constants/gst';
+import { stateCodeFromGstin, stateName } from '../../common/constants/india-states';
 import { QUEUES, JOBS } from '../../queue/queue.constants';
 
-/**
- * Core loop (design §7): validate -> allocate next gapless FY number (atomic counter) ->
- * capture FX rate -> auto-fill compliance fields -> persist invoice -> enqueue generate-pdf.
- */
 @Injectable()
 export class InvoicesService {
   constructor(
@@ -32,25 +31,15 @@ export class InvoicesService {
   ) {}
 
   async create(orgId: string, userId: string, dto: CreateInvoiceDto) {
-    // Ownership check: client must belong to the caller's org (design §10).
-    await this.clients.findOneScoped(orgId, dto.clientId);
+    const client = await this.clients.findOneScoped(orgId, dto.clientId);
     const profile = await this.users.findById(userId);
 
     const invoiceDate = dto.invoiceDate ?? new Date().toISOString().slice(0, 10);
     const dateObj = new Date(invoiceDate + 'T00:00:00Z');
     const fy = financialYearOf(dateObj);
-
-    // Capture the FX rate immutably (design §12).
-    const captured = await this.fx.capture(dto.currency, invoiceDate);
-
-    // Compliance auto-fill (design §12).
-    const onLut = Boolean(profile?.lutNumber);
-    const declaration = renderDeclaration({
-      onLut, lutArn: profile?.lutArn ?? undefined, lutFy: profile?.lutFy ?? undefined,
-    });
     const defaultSac = profile?.defaultSac ?? DEFAULT_SAC;
 
-    // Compute money in minor units to avoid float drift, store as fixed-2 strings.
+    // Line totals in minor units (avoid float drift).
     const items = dto.items.map((i) => {
       const lineTotalCents = Math.round(i.quantity * i.unitAmount * 100);
       return {
@@ -59,13 +48,16 @@ export class InvoicesService {
         quantity: i.quantity.toFixed(2),
         unitAmount: i.unitAmount.toFixed(2),
         lineTotal: (lineTotalCents / 100).toFixed(2),
+        gstRate: i.gstRate ?? 0,
         _cents: lineTotalCents,
       };
     });
     const subtotalCents = items.reduce((acc, i) => acc + i._cents, 0);
-    const inrCents = Math.round((subtotalCents / 100) * captured.rate * 100);
 
-    // Allocate the gapless number (atomic) then insert the invoice document.
+    const base = client.type === 'domestic'
+      ? this.buildDomestic(client, profile, items, subtotalCents, dto)
+      : await this.buildExport(profile, items, subtotalCents, invoiceDate, dateObj, dto);
+
     const number = await this.numbering.allocate(orgId, fy);
 
     const saved = await this.invoices.create({
@@ -74,27 +66,72 @@ export class InvoicesService {
       number,
       financialYear: fy,
       invoiceDate,
-      currency: dto.currency.toUpperCase(),
+      items: items.map(({ _cents, ...rest }) => rest),
+      ...base,
+    });
+
+    await this.pdfQueue.add(JOBS.GENERATE_PDF, { invoiceId: saved.id, orgId }, { jobId: `pdf:${saved.id}` });
+    return saved.toJSON();
+  }
+
+  // ── Export (foreign client, zero-rated under LUT) ──
+  private async buildExport(
+    profile: any, items: any[], subtotalCents: number, invoiceDate: string, dateObj: Date, dto: CreateInvoiceDto,
+  ) {
+    const currency = (dto.currency && dto.currency !== 'INR' ? dto.currency : 'USD').toUpperCase();
+    const captured = await this.fx.capture(currency, invoiceDate);
+    const onLut = Boolean(profile?.lutNumber);
+    const inrCents = Math.round((subtotalCents / 100) * captured.rate * 100);
+    return {
+      type: 'export' as const,
+      currency,
       fxRate: captured.rate.toFixed(6),
       fxRateSource: captured.source,
       fxRateDate: captured.rateDate,
       subtotal: (subtotalCents / 100).toFixed(2),
       inrEquivalent: (inrCents / 100).toFixed(2),
-      declarationText: declaration,
+      taxType: 'LUT_ZERO' as const,
+      cgstAmount: '0.00', sgstAmount: '0.00', igstAmount: '0.00', taxTotal: '0.00',
+      grandTotal: (subtotalCents / 100).toFixed(2),
+      declarationText: renderDeclaration({ onLut, lutArn: profile?.lutArn, lutFy: profile?.lutFy }),
       placeOfSupply: PLACE_OF_SUPPLY_EXPORT,
-      status: 'draft',
+      placeOfSupplyState: null,
       femaDueDate: femaDueDate(dateObj).toISOString().slice(0, 10),
-      items: items.map(({ _cents, ...rest }) => rest),
-    });
+    };
+  }
 
-    // Enqueue PDF generation (design §13). Idempotent on invoice id.
-    await this.pdfQueue.add(
-      JOBS.GENERATE_PDF,
-      { invoiceId: saved.id, orgId },
-      { jobId: `pdf:${saved.id}` },
+  // ── Domestic (Indian client, GST: CGST+SGST or IGST) ──
+  private buildDomestic(client: any, profile: any, items: any[], subtotalCents: number, _dto: CreateInvoiceDto) {
+    const supplierState = stateCodeFromGstin(profile?.gstin);
+    if (!supplierState) {
+      throw new BadRequestException('Add your GSTIN in Business profile before raising a domestic GST invoice.');
+    }
+    if (!client.stateCode) {
+      throw new BadRequestException('This domestic client is missing a GST state — edit the client to add it.');
+    }
+    const gst = computeGst(
+      subtotalCents,
+      items.map((i) => ({ lineTotalCents: i._cents, gstRate: i.gstRate ?? DEFAULT_GST_RATE })),
+      supplierState,
+      client.stateCode,
     );
-
-    return saved.toJSON();
+    return {
+      type: 'domestic' as const,
+      currency: 'INR',
+      fxRate: '1.000000', fxRateSource: 'NA', fxRateDate: new Date().toISOString().slice(0, 10),
+      subtotal: (subtotalCents / 100).toFixed(2),
+      inrEquivalent: (gst.grandTotalCents / 100).toFixed(2),
+      taxType: gst.taxType,
+      cgstAmount: (gst.cgstCents / 100).toFixed(2),
+      sgstAmount: (gst.sgstCents / 100).toFixed(2),
+      igstAmount: (gst.igstCents / 100).toFixed(2),
+      taxTotal: (gst.taxTotalCents / 100).toFixed(2),
+      grandTotal: (gst.grandTotalCents / 100).toFixed(2),
+      declarationText: DOMESTIC_TAX_NOTE,
+      placeOfSupply: stateName(client.stateCode),
+      placeOfSupplyState: client.stateCode,
+      femaDueDate: null,
+    };
   }
 
   async list(orgId: string, page: PaginationDto): Promise<Paginated<any>> {
@@ -124,5 +161,36 @@ export class InvoicesService {
 
   async setPdfUrl(id: string, pdfUrl: string): Promise<void> {
     await this.invoices.findByIdAndUpdate(id, { pdfUrl }).exec();
+  }
+
+  // ───────────────────────── FEMA aging (exports only) ─────────────────────────
+
+  async femaAging(orgId: string): Promise<Array<Record<string, any>>> {
+    const rows = await this.invoices
+      .find({ orgId, type: 'export', status: { $ne: 'paid' } })
+      .sort({ femaDueDate: 1 })
+      .exec();
+    return rows
+      .filter((inv) => inv.femaDueDate)
+      .map((inv) => {
+        const aging: FemaAging = agingOf(inv.invoiceDate, inv.femaDueDate as string);
+        return { ...inv.toJSON(), aging };
+      });
+  }
+
+  findAllUnpaid() {
+    return this.invoices.find({ type: 'export', status: { $ne: 'paid' }, femaDueDate: { $ne: null } }).exec();
+  }
+
+  async markPaid(orgId: string, id: string) {
+    await this.invoices.updateOne({ _id: id, orgId }, { status: 'paid' }).exec();
+  }
+
+  async markOverdue(id: string) {
+    await this.invoices.updateOne({ _id: id, status: { $ne: 'paid' } }, { status: 'overdue' }).exec();
+  }
+
+  async pushReminderSent(id: string, key: string) {
+    await this.invoices.updateOne({ _id: id }, { $addToSet: { femaRemindersSent: key } }).exec();
   }
 }

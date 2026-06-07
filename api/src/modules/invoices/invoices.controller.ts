@@ -20,6 +20,13 @@ export class InvoicesController {
     return this.invoices.list(user.orgId, page);
   }
 
+  // NOTE: declared before ':id' so it isn't captured as an invoice id.
+  @Get('fema/aging')
+  @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER, Role.ACCOUNTANT)
+  femaAging(@CurrentUser() user: AuthPrincipal) {
+    return this.invoices.femaAging(user.orgId);
+  }
+
   @Post()
   @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   create(@CurrentUser() user: AuthPrincipal, @Body() dto: CreateInvoiceDto) {
