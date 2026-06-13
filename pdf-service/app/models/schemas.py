@@ -42,3 +42,16 @@ class GstrExportRequest(BaseModel):
     orgId: str
     financialYear: str
     invoices: list[dict] = Field(default_factory=list)
+
+
+class FircFile(BaseModel):
+    invoiceNumber: str
+    filename: str
+    base64: str
+
+
+class BundleRequest(BaseModel):
+    financialYear: str
+    seller: dict = Field(default_factory=dict)
+    invoices: list[dict] = Field(default_factory=list)
+    firc: list[FircFile] = Field(default_factory=list)
