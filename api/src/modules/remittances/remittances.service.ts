@@ -95,4 +95,24 @@ export class RemittancesService {
     const buffer = await this.storage.read(remittance.fircStorageKey);
     return { buffer, filename: remittance.fircFilename ?? 'firc', contentType: meta?.contentType ?? 'application/octet-stream' };
   }
+
+  /** Collect all stored FIRC/e-FIRA files for a set of invoices (used by the document bundle). */
+  async collectFircForInvoices(
+    orgId: string,
+    invoiceIds: string[],
+  ): Promise<Array<{ invoiceId: string; filename: string; buffer: Buffer }>> {
+    const rows = await this.remittances
+      .find({ orgId, invoiceId: { $in: invoiceIds }, fircStorageKey: { $ne: null } })
+      .exec();
+    const out: Array<{ invoiceId: string; filename: string; buffer: Buffer }> = [];
+    for (const r of rows) {
+      try {
+        const buffer = await this.storage.read(r.fircStorageKey as string);
+        out.push({ invoiceId: r.invoiceId, filename: r.fircFilename ?? 'firc', buffer });
+      } catch {
+        // Skip unreadable files; the bundle should still build.
+      }
+    }
+    return out;
+  }
 }

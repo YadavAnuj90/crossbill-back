@@ -1,4 +1,4 @@
-import { NestFactory, Reflector } from '@nestjs/core';
+import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
@@ -8,16 +8,29 @@ import { globalValidationPipe } from './common/pipes/validation.pipe';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
-import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { setupSwagger } from './common/swagger/swagger.setup';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: false });
   const config = app.get(ConfigService);
-  const reflector = app.get(Reflector);
 
   app.setGlobalPrefix('api/v1');
 
-  app.use(helmet());
+  setupSwagger(app, config.get<string>('apiUrl'));
+
+  app.use(
+    helmet({
+      // Allow Swagger UI's inline bootstrap script/styles to load.
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: [`'self'`],
+          styleSrc: [`'self'`, `'unsafe-inline'`],
+          imgSrc: [`'self'`, 'data:', 'https://validator.swagger.io'],
+          scriptSrc: [`'self'`, `'unsafe-inline'`],
+        },
+      },
+    }),
+  );
   app.use(cookieParser());
   app.enableCors({
     origin: [config.get<string>('appUrl') ?? 'http://localhost:3001'],
@@ -27,13 +40,16 @@ async function bootstrap() {
   app.useGlobalPipes(globalValidationPipe);
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new LoggingInterceptor(), new TransformInterceptor());
-  app.useGlobalGuards(new JwtAuthGuard(reflector));
+  // Auth + role guards are registered as APP_GUARD in AppModule (in the correct order).
 
   app.enableShutdownHooks();
 
   const port = config.get<number>('port') ?? 3000;
   await app.listen(port);
-  new Logger('Bootstrap').log(`Crossbill API listening on :${port}/api/v1`);
+  const log = new Logger('Bootstrap');
+  log.log(`Crossbill API listening on :${port}/api/v1`);
+  log.log(`Swagger UI:   http://localhost:${port}/api/v1/docs`);
+  log.log(`OpenAPI JSON: http://localhost:${port}/api/v1/docs-json`);
 }
 
 bootstrap();

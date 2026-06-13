@@ -182,6 +182,11 @@ export class InvoicesService {
     return this.invoices.find({ type: 'export', status: { $ne: 'paid' }, femaDueDate: { $ne: null } }).exec();
   }
 
+  /** All invoices for an org in a financial year (used by the document bundle / filing exports). */
+  listByFinancialYear(orgId: string, financialYear: string) {
+    return this.invoices.find({ orgId, financialYear }).sort({ number: 1 }).exec();
+  }
+
   async markPaid(orgId: string, id: string) {
     await this.invoices.updateOne({ _id: id, orgId }, { status: 'paid' }).exec();
   }

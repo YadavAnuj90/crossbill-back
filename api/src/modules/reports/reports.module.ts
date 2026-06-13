@@ -8,6 +8,7 @@ import { InvoicesModule } from '../invoices/invoices.module';
 import { ClientsModule } from '../clients/clients.module';
 import { UsersModule } from '../users/users.module';
 import { AuditModule } from '../audit/audit.module';
+import { RemittancesModule } from '../remittances/remittances.module';
 import { QUEUES } from '../../queue/queue.constants';
 
 @Module({
@@ -17,6 +18,7 @@ import { QUEUES } from '../../queue/queue.constants';
     ClientsModule,
     UsersModule,
     AuditModule,
+    RemittancesModule,
   ],
   providers: [ReportsService, PdfServiceClient, PdfProcessor],
   controllers: [ReportsController],

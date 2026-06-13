@@ -1,0 +1,2725 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "operationId": "AuthController_register",
+        "summary": "Register a new account",
+        "description": "Creates a user + organisation and returns an access token. The refresh token is set as the `crossbill_rt` httpOnly cookie.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "summary": "Log in with email & password",
+        "description": "Returns an access token and sets the `crossbill_rt` httpOnly refresh cookie.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/google": {
+      "get": {
+        "operationId": "AuthController_google",
+        "summary": "Start Google OAuth",
+        "description": "Redirects the browser to the Google consent screen. Open this in a browser, not via fetch.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/google/callback": {
+      "get": {
+        "operationId": "AuthController_googleCallback",
+        "summary": "Google OAuth callback",
+        "description": "Google redirects here. Sets the refresh cookie and redirects to the app with the access token in the URL fragment.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "summary": "Rotate tokens",
+        "description": "Reads the `crossbill_rt` cookie, rotates the refresh token and returns a fresh access token.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "New access token issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "crossbill_rt": []
+          }
+        ]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "summary": "Log out",
+        "description": "Revokes refresh tokens for the user and clears the refresh cookie.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Logged out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "loggedOut": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/profile": {
+      "get": {
+        "operationId": "UsersController_me",
+        "summary": "Get my profile",
+        "description": "Returns the authenticated user's business profile (no password hash).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Current profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "id": "665f19f09a4e1c0012ab10aa",
+                      "email": "founder@acme.in",
+                      "legalName": "Acme Software Exports Pvt Ltd",
+                      "gstin": "27AAPFU0939F1ZV",
+                      "address": "Unit 4, Tech Park, Pune 411057",
+                      "defaultSac": "998314",
+                      "bankAccount": "50100123456789",
+                      "bankIfsc": "HDFC0001234",
+                      "lutNumber": "AD2701260012345",
+                      "lutFy": "2026-27",
+                      "role": "OWNER",
+                      "orgId": "665f1a009a4e1c0012ab1100"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Profile"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "UsersController_update",
+        "summary": "Update my profile",
+        "description": "Update business details used to render compliant invoices.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "id": "665f19f09a4e1c0012ab10aa",
+                      "email": "founder@acme.in",
+                      "legalName": "Acme Software Exports Pvt Ltd",
+                      "gstin": "27AAPFU0939F1ZV",
+                      "address": "Unit 4, Tech Park, Pune 411057",
+                      "defaultSac": "998314",
+                      "bankAccount": "50100123456789",
+                      "bankIfsc": "HDFC0001234",
+                      "lutNumber": "AD2701260012345",
+                      "lutFy": "2026-27",
+                      "role": "OWNER",
+                      "orgId": "665f1a009a4e1c0012ab1100"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Profile"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/team": {
+      "get": {
+        "operationId": "OrganizationsController_list",
+        "summary": "Get my organisation",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Organisation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "org": {
+                        "id": "665f1a009a4e1c0012ab1100",
+                        "name": "Acme Software Exports",
+                        "plan": "free"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Team"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/team/invite": {
+      "post": {
+        "operationId": "OrganizationsController_invite",
+        "summary": "Invite a team member",
+        "description": "Records a pending invite (delivery wired in the v2 Teams phase).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteMemberDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Invite recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "invited": "accountant@acme.in",
+                      "role": "ACCOUNTANT",
+                      "orgId": "665f1a009a4e1c0012ab1100",
+                      "status": "pending"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Team"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/clients": {
+      "get": {
+        "operationId": "ClientsController_list",
+        "summary": "List clients",
+        "description": "Paginated list of clients in the caller's organisation.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Paginated clients",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": [
+                      {
+                        "id": "665f1b2c9a4e1c0012ab34cd",
+                        "orgId": "665f1a009a4e1c0012ab1100",
+                        "type": "foreign",
+                        "name": "Globex Corporation",
+                        "email": "ap@globex.com",
+                        "country": "US",
+                        "createdAt": "2026-06-12T10:00:00.000Z"
+                      }
+                    ],
+                    "meta": {
+                      "page": 1,
+                      "limit": 20,
+                      "total": 1,
+                      "totalPages": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Clients"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "ClientsController_create",
+        "summary": "Create a client",
+        "description": "Creates a foreign or domestic client.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClientDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Client created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "id": "665f1b2c9a4e1c0012ab34cd",
+                      "orgId": "665f1a009a4e1c0012ab1100",
+                      "type": "foreign",
+                      "name": "Globex Corporation",
+                      "email": "ap@globex.com",
+                      "country": "US",
+                      "createdAt": "2026-06-12T10:00:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Clients"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/clients/{id}": {
+      "patch": {
+        "operationId": "ClientsController_update",
+        "summary": "Update a client",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Client id",
+            "schema": {
+              "example": "665f1b2c9a4e1c0012ab34cd",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClientDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Client updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "id": "665f1b2c9a4e1c0012ab34cd",
+                      "orgId": "665f1a009a4e1c0012ab1100",
+                      "type": "foreign",
+                      "name": "Globex Corporation",
+                      "email": "ap@globex.com",
+                      "country": "US",
+                      "createdAt": "2026-06-12T10:00:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Client not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Clients"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "ClientsController_remove",
+        "summary": "Delete a client",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Client id",
+            "schema": {
+              "example": "665f1b2c9a4e1c0012ab34cd",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Client deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "deleted": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Client not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Clients"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/invoices": {
+      "get": {
+        "operationId": "InvoicesController_list",
+        "summary": "List invoices",
+        "description": "Paginated list of invoices in the organisation.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Paginated invoices",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": [
+                      {
+                        "id": "665f1b2c9a4e1c0012ab34cd",
+                        "orgId": "665f1a009a4e1c0012ab1100",
+                        "type": "export",
+                        "clientId": "665f1b2c9a4e1c0012ab34cd",
+                        "number": "INV-2026-0007",
+                        "financialYear": "2026-27",
+                        "invoiceDate": "2026-06-12",
+                        "currency": "USD",
+                        "fxRate": "83.4500",
+                        "subtotal": "5000.00",
+                        "inrEquivalent": "417250.00",
+                        "taxType": "LUT_ZERO",
+                        "grandTotal": "5000.00",
+                        "status": "draft",
+                        "femaDueDate": "2026-12-09",
+                        "pdfUrl": null,
+                        "items": [
+                          {
+                            "description": "Software development services",
+                            "sacCode": "998314",
+                            "quantity": "1",
+                            "unitAmount": "5000.00",
+                            "lineTotal": "5000.00",
+                            "gstRate": 0
+                          }
+                        ]
+                      }
+                    ],
+                    "meta": {
+                      "page": 1,
+                      "limit": 20,
+                      "total": 1,
+                      "totalPages": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Invoices"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "InvoicesController_create",
+        "summary": "Create an invoice",
+        "description": "Creates an export or domestic invoice. Number, FX rate, tax breakup and FEMA due date are computed server-side.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInvoiceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Invoice created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "id": "665f1b2c9a4e1c0012ab34cd",
+                      "orgId": "665f1a009a4e1c0012ab1100",
+                      "type": "export",
+                      "clientId": "665f1b2c9a4e1c0012ab34cd",
+                      "number": "INV-2026-0007",
+                      "financialYear": "2026-27",
+                      "invoiceDate": "2026-06-12",
+                      "currency": "USD",
+                      "fxRate": "83.4500",
+                      "subtotal": "5000.00",
+                      "inrEquivalent": "417250.00",
+                      "taxType": "LUT_ZERO",
+                      "grandTotal": "5000.00",
+                      "status": "draft",
+                      "femaDueDate": "2026-12-09",
+                      "pdfUrl": null,
+                      "items": [
+                        {
+                          "description": "Software development services",
+                          "sacCode": "998314",
+                          "quantity": "1",
+                          "unitAmount": "5000.00",
+                          "lineTotal": "5000.00",
+                          "gstRate": 0
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Invoices"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/invoices/fema/aging": {
+      "get": {
+        "operationId": "InvoicesController_femaAging",
+        "summary": "FEMA aging buckets",
+        "description": "Export invoices grouped by days-to-realisation bucket against the FEMA deadline.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Aging buckets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "buckets": {
+                        "0-30": 2,
+                        "31-60": 1,
+                        "overdue": 0
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Invoices"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/invoices/{id}": {
+      "get": {
+        "operationId": "InvoicesController_findOne",
+        "summary": "Get an invoice by id",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Invoice id",
+            "schema": {
+              "example": "665f1b2c9a4e1c0012ab34cd",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invoice",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "id": "665f1b2c9a4e1c0012ab34cd",
+                      "orgId": "665f1a009a4e1c0012ab1100",
+                      "type": "export",
+                      "clientId": "665f1b2c9a4e1c0012ab34cd",
+                      "number": "INV-2026-0007",
+                      "financialYear": "2026-27",
+                      "invoiceDate": "2026-06-12",
+                      "currency": "USD",
+                      "fxRate": "83.4500",
+                      "subtotal": "5000.00",
+                      "inrEquivalent": "417250.00",
+                      "taxType": "LUT_ZERO",
+                      "grandTotal": "5000.00",
+                      "status": "draft",
+                      "femaDueDate": "2026-12-09",
+                      "pdfUrl": null,
+                      "items": [
+                        {
+                          "description": "Software development services",
+                          "sacCode": "998314",
+                          "quantity": "1",
+                          "unitAmount": "5000.00",
+                          "lineTotal": "5000.00",
+                          "gstRate": 0
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Invoice not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Invoices"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "InvoicesController_update",
+        "summary": "Update invoice status",
+        "description": "Only the status may change; financial fields are immutable.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Invoice id",
+            "schema": {
+              "example": "665f1b2c9a4e1c0012ab34cd",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInvoiceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Invoice updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "id": "665f1b2c9a4e1c0012ab34cd",
+                      "orgId": "665f1a009a4e1c0012ab1100",
+                      "type": "export",
+                      "clientId": "665f1b2c9a4e1c0012ab34cd",
+                      "number": "INV-2026-0007",
+                      "financialYear": "2026-27",
+                      "invoiceDate": "2026-06-12",
+                      "currency": "USD",
+                      "fxRate": "83.4500",
+                      "subtotal": "5000.00",
+                      "inrEquivalent": "417250.00",
+                      "taxType": "LUT_ZERO",
+                      "grandTotal": "5000.00",
+                      "status": "sent",
+                      "femaDueDate": "2026-12-09",
+                      "pdfUrl": null,
+                      "items": [
+                        {
+                          "description": "Software development services",
+                          "sacCode": "998314",
+                          "quantity": "1",
+                          "unitAmount": "5000.00",
+                          "lineTotal": "5000.00",
+                          "gstRate": 0
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Invoice not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Invoices"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/invoices/{id}/pdf": {
+      "get": {
+        "operationId": "InvoicesController_pdf",
+        "summary": "Get invoice PDF url",
+        "description": "Returns the generated PDF url, or 404 while generation is still queued.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Invoice id",
+            "schema": {
+              "example": "665f1b2c9a4e1c0012ab34cd",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PDF location",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "url": "https://files.crossbill.app/invoices/INV-2026-0007.pdf",
+                      "status": "sent"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "PDF not ready yet; generation is queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Invoices"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/remittances": {
+      "post": {
+        "operationId": "RemittancesController_create",
+        "summary": "Record an inward remittance",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRemittanceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Remittance recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "id": "665f2a119a4e1c0012ab55ef",
+                      "orgId": "665f1a009a4e1c0012ab1100",
+                      "invoiceId": "665f1b2c9a4e1c0012ab34cd",
+                      "amountReceived": "5000.00",
+                      "currency": "USD",
+                      "receivedDate": "2026-06-10",
+                      "purposeCode": "P0802",
+                      "fircUrl": null,
+                      "createdAt": "2026-06-10T09:30:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Remittances"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "RemittancesController_list",
+        "summary": "List remittances for an invoice",
+        "parameters": [
+          {
+            "name": "invoiceId",
+            "required": true,
+            "in": "query",
+            "description": "Invoice id to list remittances for",
+            "schema": {
+              "example": "665f1b2c9a4e1c0012ab34cd",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Remittances",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": [
+                      {
+                        "id": "665f2a119a4e1c0012ab55ef",
+                        "orgId": "665f1a009a4e1c0012ab1100",
+                        "invoiceId": "665f1b2c9a4e1c0012ab34cd",
+                        "amountReceived": "5000.00",
+                        "currency": "USD",
+                        "receivedDate": "2026-06-10",
+                        "purposeCode": "P0802",
+                        "fircUrl": null,
+                        "createdAt": "2026-06-10T09:30:00.000Z"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Remittances"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/remittances/{id}/firc": {
+      "post": {
+        "operationId": "RemittancesController_uploadFirc",
+        "summary": "Upload FIRC / e-FIRA",
+        "description": "Attach the bank FIRC document (PDF or image, max 10 MB) to a remittance.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Remittance id",
+            "schema": {
+              "example": "665f2a119a4e1c0012ab55ef",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "firc"
+                ],
+                "properties": {
+                  "firc": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "FIRC file (pdf/png/jpg, ≤ 10 MB)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "FIRC attached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "id": "665f2a119a4e1c0012ab55ef",
+                      "orgId": "665f1a009a4e1c0012ab1100",
+                      "invoiceId": "665f1b2c9a4e1c0012ab34cd",
+                      "amountReceived": "5000.00",
+                      "currency": "USD",
+                      "receivedDate": "2026-06-10",
+                      "purposeCode": "P0802",
+                      "fircUrl": "/api/v1/remittances/665f2a119a4e1c0012ab55ef/firc",
+                      "createdAt": "2026-06-10T09:30:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Remittance not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Remittances"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "RemittancesController_downloadFirc",
+        "summary": "Download FIRC",
+        "description": "Streams the stored FIRC document inline (bypasses the JSON envelope).",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Remittance id",
+            "schema": {
+              "example": "665f2a119a4e1c0012ab55ef",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Binary FIRC document stream",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "FIRC not found for this remittance",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Remittances"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/reminders/fema/run": {
+      "post": {
+        "operationId": "RemindersController_runFema",
+        "summary": "Run FEMA aging sweep",
+        "description": "Runs the FEMA aging sweep synchronously (OWNER only) and reports what reminders it queued.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Sweep result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "scanned": 12,
+                      "remindersQueued": 3
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Reminders"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/reports/gstr-6a": {
+      "get": {
+        "operationId": "ReportsController_gstr6a",
+        "summary": "GSTR-1 Table 6A export",
+        "description": "Returns the GSTR-1 Table 6A dataset for the given financial year.",
+        "parameters": [
+          {
+            "name": "financialYear",
+            "required": true,
+            "in": "query",
+            "description": "Financial year in `YYYY-YY` form",
+            "schema": {
+              "minLength": 7,
+              "maxLength": 7,
+              "example": "2026-27",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "GSTR-6A rows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "financialYear": "2026-27",
+                      "rows": [
+                        {
+                          "invoiceNumber": "INV-2026-0007",
+                          "inrEquivalent": "417250.00"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Reports"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/reports/bundle": {
+      "get": {
+        "operationId": "ReportsController_bundle",
+        "summary": "Download compliance bundle (ZIP)",
+        "description": "Streams a ZIP of all invoices, FIRC documents and LUT reference for the financial year.",
+        "parameters": [
+          {
+            "name": "financialYear",
+            "required": true,
+            "in": "query",
+            "description": "Financial year in `YYYY-YY` form",
+            "schema": {
+              "minLength": 7,
+              "maxLength": 7,
+              "example": "2026-27",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ZIP archive stream",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failed",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Authenticated but role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Reports"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/health/live": {
+      "get": {
+        "operationId": "HealthController_live",
+        "summary": "Liveness probe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Service is up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "status": "ok"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "HealthController_ready",
+        "summary": "Readiness probe",
+        "description": "Checks MongoDB and the PDF service dependency.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "The Health Check is successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    },
+                    "info": {
+                      "type": "object",
+                      "example": {
+                        "database": {
+                          "status": "up"
+                        }
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": [
+                          "status"
+                        ],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      },
+                      "nullable": true
+                    },
+                    "error": {
+                      "type": "object",
+                      "example": {},
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": [
+                          "status"
+                        ],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      },
+                      "nullable": true
+                    },
+                    "details": {
+                      "type": "object",
+                      "example": {
+                        "database": {
+                          "status": "up"
+                        }
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": [
+                          "status"
+                        ],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The Health Check is not successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "info": {
+                      "type": "object",
+                      "example": {
+                        "database": {
+                          "status": "up"
+                        }
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": [
+                          "status"
+                        ],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      },
+                      "nullable": true
+                    },
+                    "error": {
+                      "type": "object",
+                      "example": {
+                        "redis": {
+                          "status": "down",
+                          "message": "Could not connect"
+                        }
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": [
+                          "status"
+                        ],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      },
+                      "nullable": true
+                    },
+                    "details": {
+                      "type": "object",
+                      "example": {
+                        "database": {
+                          "status": "up"
+                        },
+                        "redis": {
+                          "status": "down",
+                          "message": "Could not connect"
+                        }
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": [
+                          "status"
+                        ],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Crossbill API",
+    "description": "Crossbill backend API — GST / FEMA compliant invoicing & remittance for Indian exporters.\n\n**Conventions**\n- Base path: `/api/v1`\n- Success envelope: `{ \"success\": true, \"data\": ... }` (list endpoints add a `meta` object).\n- Error envelope: `{ \"success\": false, \"error\": { \"code\", \"message\", \"correlationId\" }, \"timestamp\", \"path\" }`.\n- Auth: send `Authorization: Bearer <accessToken>` (obtained from `/auth/login` or `/auth/register`).\n- The refresh token is delivered as the `crossbill_rt` httpOnly cookie and is read automatically by `/auth/refresh`.",
+    "version": "1.0.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Registration, login, Google OAuth, token refresh & logout"
+    },
+    {
+      "name": "Profile",
+      "description": "Current user business profile (GSTIN, LUT, bank details)"
+    },
+    {
+      "name": "Clients",
+      "description": "Foreign & domestic customers"
+    },
+    {
+      "name": "Invoices",
+      "description": "Export & domestic invoices, PDF and FEMA aging"
+    },
+    {
+      "name": "Remittances",
+      "description": "Inward remittances and FIRC / e-FIRA documents"
+    },
+    {
+      "name": "Reports",
+      "description": "GSTR-1 Table 6A export and compliance bundles"
+    },
+    {
+      "name": "Team",
+      "description": "Organisation / tenancy management"
+    },
+    {
+      "name": "Reminders",
+      "description": "FEMA aging sweep (ops)"
+    },
+    {
+      "name": "Health",
+      "description": "Liveness & readiness probes"
+    }
+  ],
+  "servers": [
+    {
+      "url": "http://localhost:4000/api/v1",
+      "description": "Base URL (includes /api/v1 prefix)"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "access-token": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http",
+        "description": "Paste the accessToken returned by /auth/login or /auth/register."
+      },
+      "cookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "crossbill_rt",
+        "description": "httpOnly refresh-token cookie set by the auth endpoints; used by /auth/refresh."
+      }
+    },
+    "schemas": {
+      "RegisterDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Email address to register the account under (must be unique)",
+            "format": "email",
+            "example": "founder@acme.in"
+          },
+          "password": {
+            "type": "string",
+            "description": "Password, minimum 8 characters",
+            "example": "S3curePass!",
+            "minLength": 8
+          },
+          "legalName": {
+            "type": "string",
+            "description": "Registered legal/business name used on invoices",
+            "example": "Acme Software Exports Pvt Ltd"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "ApiErrorBody": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "number",
+            "example": 400,
+            "description": "HTTP status code"
+          },
+          "message": {
+            "type": "string",
+            "example": "Validation failed",
+            "description": "Human-readable error message"
+          },
+          "correlationId": {
+            "type": "string",
+            "example": "7f3c1e9a-2b4d-4c8e-9a1b-1f2e3d4c5b6a",
+            "description": "Request correlation id"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "correlationId"
+        ]
+      },
+      "ApiErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiErrorBody"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-06-12T10:15:30.000Z"
+          },
+          "path": {
+            "type": "string",
+            "example": "/api/v1/clients"
+          }
+        },
+        "required": [
+          "success",
+          "error",
+          "timestamp",
+          "path"
+        ]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Account email address",
+            "format": "email",
+            "example": "founder@acme.in"
+          },
+          "password": {
+            "type": "string",
+            "description": "Account password",
+            "example": "S3curePass!",
+            "minLength": 8
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "UpdateProfileDto": {
+        "type": "object",
+        "properties": {
+          "legalName": {
+            "type": "string",
+            "description": "Registered legal/business name",
+            "example": "Acme Software Exports Pvt Ltd"
+          },
+          "gstin": {
+            "type": "string",
+            "description": "15-character GSTIN",
+            "example": "27AAPFU0939F1ZV",
+            "pattern": "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$"
+          },
+          "address": {
+            "type": "string",
+            "description": "Registered business address",
+            "example": "Unit 4, Tech Park, Pune 411057"
+          },
+          "defaultSac": {
+            "type": "string",
+            "description": "Default SAC code applied to invoice items",
+            "enum": [
+              "998313",
+              "998314",
+              "998315",
+              "998316",
+              "998319",
+              "998361",
+              "998391",
+              "998399"
+            ],
+            "example": "998314"
+          },
+          "bankAccount": {
+            "type": "string",
+            "description": "Bank account number for remittances",
+            "example": "50100123456789"
+          },
+          "bankIfsc": {
+            "type": "string",
+            "description": "Bank IFSC code",
+            "example": "HDFC0001234",
+            "pattern": "^[A-Z]{4}0[A-Z0-9]{6}$"
+          },
+          "lutNumber": {
+            "type": "string",
+            "description": "LUT (Letter of Undertaking) number for zero-rated exports",
+            "example": "AD2701260012345"
+          },
+          "lutFy": {
+            "type": "string",
+            "description": "LUT financial year in `YYYY-YY` form",
+            "example": "2026-27",
+            "minLength": 7,
+            "maxLength": 7
+          },
+          "lutArn": {
+            "type": "string",
+            "description": "LUT acknowledgement reference number (ARN)",
+            "example": "AD270126001234A"
+          }
+        }
+      },
+      "InviteMemberDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Email address of the person to invite",
+            "format": "email",
+            "example": "accountant@acme.in"
+          },
+          "role": {
+            "type": "string",
+            "description": "Role to grant the invited member",
+            "enum": [
+              "OWNER",
+              "ADMIN",
+              "MEMBER",
+              "ACCOUNTANT"
+            ],
+            "example": "ACCOUNTANT"
+          }
+        },
+        "required": [
+          "email",
+          "role"
+        ]
+      },
+      "CreateClientDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Client type. `foreign` requires `country`; `domestic` requires `stateCode` and `customerType`.",
+            "enum": [
+              "foreign",
+              "domestic"
+            ],
+            "example": "foreign"
+          },
+          "name": {
+            "type": "string",
+            "description": "Client / company name",
+            "example": "Globex Corporation"
+          },
+          "email": {
+            "type": "string",
+            "description": "Client billing email",
+            "format": "email",
+            "example": "ap@globex.com"
+          },
+          "address": {
+            "type": "string",
+            "description": "Postal address",
+            "example": "1 Market St, San Francisco, CA"
+          },
+          "country": {
+            "type": "string",
+            "description": "Foreign clients only — 2-letter ISO country code",
+            "example": "US",
+            "minLength": 2,
+            "maxLength": 2
+          },
+          "stateCode": {
+            "type": "string",
+            "description": "Domestic clients only — GST state code",
+            "enum": [
+              "01",
+              "02",
+              "03",
+              "04",
+              "05",
+              "06",
+              "07",
+              "08",
+              "09",
+              "10",
+              "11",
+              "12",
+              "13",
+              "14",
+              "15",
+              "16",
+              "17",
+              "18",
+              "19",
+              "20",
+              "21",
+              "22",
+              "23",
+              "24",
+              "26",
+              "27",
+              "29",
+              "30",
+              "31",
+              "32",
+              "33",
+              "34",
+              "35",
+              "36",
+              "37",
+              "38"
+            ],
+            "example": "27"
+          },
+          "customerType": {
+            "type": "string",
+            "description": "Domestic clients only — B2B (registered) or B2C (unregistered)",
+            "enum": [
+              "b2b",
+              "b2c"
+            ],
+            "example": "b2b"
+          },
+          "gstin": {
+            "type": "string",
+            "description": "Required for domestic B2B clients — 15-character GSTIN",
+            "example": "27AAPFU0939F1ZV",
+            "pattern": "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$"
+          }
+        },
+        "required": [
+          "type",
+          "name"
+        ]
+      },
+      "UpdateClientDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Client type. `foreign` requires `country`; `domestic` requires `stateCode` and `customerType`.",
+            "enum": [
+              "foreign",
+              "domestic"
+            ],
+            "example": "foreign"
+          },
+          "name": {
+            "type": "string",
+            "description": "Client / company name",
+            "example": "Globex Corporation"
+          },
+          "email": {
+            "type": "string",
+            "description": "Client billing email",
+            "format": "email",
+            "example": "ap@globex.com"
+          },
+          "address": {
+            "type": "string",
+            "description": "Postal address",
+            "example": "1 Market St, San Francisco, CA"
+          },
+          "country": {
+            "type": "string",
+            "description": "Foreign clients only — 2-letter ISO country code",
+            "example": "US",
+            "minLength": 2,
+            "maxLength": 2
+          },
+          "stateCode": {
+            "type": "string",
+            "description": "Domestic clients only — GST state code",
+            "enum": [
+              "01",
+              "02",
+              "03",
+              "04",
+              "05",
+              "06",
+              "07",
+              "08",
+              "09",
+              "10",
+              "11",
+              "12",
+              "13",
+              "14",
+              "15",
+              "16",
+              "17",
+              "18",
+              "19",
+              "20",
+              "21",
+              "22",
+              "23",
+              "24",
+              "26",
+              "27",
+              "29",
+              "30",
+              "31",
+              "32",
+              "33",
+              "34",
+              "35",
+              "36",
+              "37",
+              "38"
+            ],
+            "example": "27"
+          },
+          "customerType": {
+            "type": "string",
+            "description": "Domestic clients only — B2B (registered) or B2C (unregistered)",
+            "enum": [
+              "b2b",
+              "b2c"
+            ],
+            "example": "b2b"
+          },
+          "gstin": {
+            "type": "string",
+            "description": "Required for domestic B2B clients — 15-character GSTIN",
+            "example": "27AAPFU0939F1ZV",
+            "pattern": "^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$"
+          }
+        }
+      },
+      "InvoiceItemDto": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "Line item description",
+            "example": "Software development services - June 2026"
+          },
+          "sacCode": {
+            "type": "string",
+            "description": "SAC (Services Accounting Code)",
+            "enum": [
+              "998313",
+              "998314",
+              "998315",
+              "998316",
+              "998319",
+              "998361",
+              "998391",
+              "998399"
+            ],
+            "example": "998314"
+          },
+          "quantity": {
+            "type": "number",
+            "description": "Quantity",
+            "example": 1,
+            "minimum": 0
+          },
+          "unitAmount": {
+            "type": "number",
+            "description": "Unit amount in the invoice currency",
+            "example": 5000,
+            "minimum": 0
+          },
+          "gstRate": {
+            "type": "number",
+            "description": "GST rate % (domestic only). Ignored for export invoices.",
+            "enum": [
+              0,
+              5,
+              12,
+              18,
+              28
+            ],
+            "example": 18
+          }
+        },
+        "required": [
+          "description",
+          "quantity",
+          "unitAmount"
+        ]
+      },
+      "CreateInvoiceDto": {
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "type": "string",
+            "description": "Id of an existing client to bill",
+            "example": "665f1b2c9a4e1c0012ab34cd"
+          },
+          "invoiceDate": {
+            "type": "string",
+            "description": "Invoice date (ISO 8601). Defaults to today when omitted.",
+            "format": "date",
+            "example": "2026-06-12"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Invoice currency. Required for export; domestic invoices are forced to INR by the server.",
+            "enum": [
+              "USD",
+              "EUR",
+              "GBP",
+              "AUD",
+              "CAD",
+              "SGD",
+              "AED",
+              "INR"
+            ],
+            "example": "USD"
+          },
+          "items": {
+            "description": "At least one line item",
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InvoiceItemDto"
+            }
+          }
+        },
+        "required": [
+          "clientId",
+          "items"
+        ]
+      },
+      "UpdateInvoiceDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "New invoice status. Financial fields cannot be changed once captured.",
+            "enum": [
+              "draft",
+              "sent",
+              "paid",
+              "overdue"
+            ],
+            "example": "sent"
+          }
+        }
+      },
+      "CreateRemittanceDto": {
+        "type": "object",
+        "properties": {
+          "invoiceId": {
+            "type": "string",
+            "description": "Id of the invoice this remittance settles",
+            "example": "665f1b2c9a4e1c0012ab34cd"
+          },
+          "amountReceived": {
+            "type": "number",
+            "description": "Amount received in the remittance currency",
+            "example": 5000,
+            "minimum": 0
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency of the received amount (ISO 4217)",
+            "example": "USD"
+          },
+          "receivedDate": {
+            "type": "string",
+            "description": "Date the funds were received (ISO 8601)",
+            "format": "date",
+            "example": "2026-06-10"
+          },
+          "purposeCode": {
+            "type": "string",
+            "description": "RBI purpose code for the inward remittance",
+            "enum": [
+              "P0802",
+              "P0801",
+              "P0803",
+              "P0806",
+              "P0807",
+              "P0808",
+              "P0809",
+              "P0902"
+            ],
+            "example": "P0802"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Free-text notes",
+            "example": "Partial payment against INV-2026-0007"
+          }
+        },
+        "required": [
+          "invoiceId",
+          "amountReceived",
+          "currency",
+          "receivedDate",
+          "purposeCode"
+        ]
+      }
+    }
+  }
+}

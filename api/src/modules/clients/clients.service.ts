@@ -45,6 +45,11 @@ export class ClientsService {
     return client;
   }
 
+  /** All clients for an org (used to enrich invoices in the document bundle). */
+  findAllForOrg(orgId: string) {
+    return this.clients.find({ orgId }).exec();
+  }
+
   async update(orgId: string, id: string, dto: UpdateClientDto) {
     const client = await this.clients.findOneAndUpdate({ _id: id, orgId }, this.normalize(dto), { new: true }).exec();
     if (!client) throw new NotFoundException('Client not found');

@@ -52,4 +52,15 @@ export class PdfServiceClient {
     const { data } = await this.http.post('/generate/gstr', payload);
     return data;
   }
+
+  /** Builds the document-bundle ZIP in the Python service and returns the raw bytes. */
+  async generateBundle(payload: Record<string, unknown>): Promise<Buffer> {
+    try {
+      const { data } = await this.http.post('/generate/bundle', payload, { responseType: 'arraybuffer' });
+      return Buffer.from(data);
+    } catch (err: any) {
+      this.logger.error(`pdf-service bundle generation failed: ${err.message}`);
+      throw new HttpException('Document bundle generation failed', 502);
+    }
+  }
 }

@@ -6,6 +6,7 @@ import { validateEnv } from './config/env.validation';
 import { MongoModule } from './database/mongo.module';
 import { RedisModule } from './common/redis/redis.module';
 import { QueueModule } from './queue/queue.module';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -41,6 +42,11 @@ import { HealthModule } from './modules/health/health.module';
     AuditModule,
     HealthModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: RolesGuard }],
+  // Order matters: JwtAuthGuard must run BEFORE RolesGuard so req.user (and its role) is set.
+  // Both are registered as APP_GUARD so they execute in this exact order.
+  providers: [
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
+  ],
 })
 export class AppModule {}

@@ -115,8 +115,18 @@ export class AuthService {
     stored.revoked = true;
     await stored.save();
 
+    // Re-read the live identity from the DB so role/org changes propagate and stale-role
+    // tokens self-heal (a token minted before the role claim existed would otherwise persist).
+    const user = await this.users.findById(payload.sub);
+    if (!user) throw new UnauthorizedException('User no longer exists');
+
     return this.issueTokens(
-      { sub: payload.sub, org_id: payload.org_id, role: payload.role, email: payload.email },
+      {
+        sub: user.id,
+        org_id: user.orgId ?? payload.org_id,
+        role: user.role ?? Role.OWNER,
+        email: user.email,
+      },
       familyId,
     );
   }
