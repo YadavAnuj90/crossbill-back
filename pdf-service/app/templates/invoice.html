@@ -31,13 +31,14 @@
   <div class="header">
     <div>
       <div class="brand">Crossbill</div>
-      <div class="muted">{{ 'Tax Invoice' if inv.is_domestic else 'Export Invoice' }}</div>
+      <div class="muted">{{ inv.doc_title }}</div>
     </div>
     <table class="meta">
-      <tr><td class="muted">Invoice No.</td><td><strong>{{ inv.number }}</strong></td></tr>
+      <tr><td class="muted">{{ inv.doc_label }}</td><td><strong>{{ inv.number }}</strong></td></tr>
       <tr><td class="muted">Date</td><td>{{ inv.invoiceDate }}</td></tr>
+      {% if inv.is_note %}<tr><td class="muted">Against Invoice</td><td>{{ inv.originalNumber }}</td></tr>{% endif %}
       <tr><td class="muted">Place of supply</td><td>{{ inv.placeOfSupply }}</td></tr>
-      <tr><td></td><td><span class="pill">{{ 'Domestic · GST' if inv.is_domestic else 'Export · 0% IGST' }}</span></td></tr>
+      <tr><td></td><td><span class="pill">{% if inv.is_note %}{{ inv.doc_title }}{% else %}{{ 'Domestic · GST' if inv.is_domestic else 'Export · 0% IGST' }}{% endif %}</span></td></tr>
     </table>
   </div>
 

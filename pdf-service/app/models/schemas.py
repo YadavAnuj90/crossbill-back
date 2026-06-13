@@ -14,10 +14,15 @@ class InvoiceItem(BaseModel):
 class InvoicePdfRequest(BaseModel):
     invoiceId: str
     type: str = "export"              # 'export' | 'domestic'
+    docType: str | None = None        # None => tax invoice; 'credit_note' | 'debit_note'
+    originalNumber: str | None = None # invoice the note is raised against
+    reason: str | None = None         # GST sec.34 reason for the note
     number: str
     invoiceDate: str
     currency: str
     fxRate: str = "1.000000"
+    fxRateSource: str | None = None
+    fxRateDate: str | None = None
     inrEquivalent: str = "0.00"
     subtotal: str = "0.00"
     taxType: str = "LUT_ZERO"
