@@ -5,10 +5,15 @@ import axios, { AxiosInstance } from 'axios';
 export interface InvoicePdfRequest {
   invoiceId: string;
   type: string;                 // 'export' | 'domestic'
+  docType?: string;             // undefined => tax invoice; 'credit_note' | 'debit_note'
+  originalNumber?: string;      // invoice the note is raised against
+  reason?: string;              // §34 reason for the note
   number: string;
   invoiceDate: string;
   currency: string;
   fxRate: string;
+  fxRateSource?: string;
+  fxRateDate?: string;
   inrEquivalent: string;
   subtotal: string;
   taxType: string;

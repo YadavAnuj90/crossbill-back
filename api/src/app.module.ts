@@ -14,6 +14,7 @@ import { OrganizationsModule } from './modules/organizations/organizations.modul
 import { ClientsModule } from './modules/clients/clients.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { NotesModule } from './modules/notes/notes.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { RemittancesModule } from './modules/remittances/remittances.module';
 import { RemindersModule } from './modules/reminders/reminders.module';
@@ -38,6 +39,7 @@ import { HealthModule } from './modules/health/health.module';
     RemittancesModule,
     RemindersModule,
     ReportsModule,
+    NotesModule,
     NotificationsModule,
     AuditModule,
     HealthModule,

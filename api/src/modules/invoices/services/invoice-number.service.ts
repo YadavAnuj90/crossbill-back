@@ -34,4 +34,20 @@ export class InvoiceNumberService {
   format(financialYear: string, seq: number): string {
     return `CB/${financialYear}/${String(seq).padStart(4, '0')}`;
   }
+
+  /**
+   * Gapless allocation for a separate document series (e.g. credit/debit notes), using a
+   * distinct counter key so the series stays consecutive on its own (design §8).
+   * @returns e.g. "CN/2026-27/0001"
+   */
+  async allocateSeries(orgId: string, financialYear: string, prefix: string): Promise<string> {
+    const doc = await this.counters
+      .findByIdAndUpdate(
+        `${orgId}:${financialYear}:${prefix}`,
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true },
+      )
+      .exec();
+    return `${prefix}/${financialYear}/${String(doc.seq).padStart(4, '0')}`;
+  }
 }
