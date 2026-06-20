@@ -60,3 +60,58 @@ class BundleRequest(BaseModel):
     seller: dict = Field(default_factory=dict)
     invoices: list[dict] = Field(default_factory=list)
     firc: list[FircFile] = Field(default_factory=list)
+
+
+class AuditLine(BaseModel):
+    at: str
+    event: str
+    detail: str | None = None
+
+
+class AgreementPdfRequest(BaseModel):
+    title: str
+    category: str = "custom"
+    body: str = ""
+    sellerName: str | None = None
+    clientName: str | None = None
+    signerName: str | None = None
+    signerEmail: str | None = None
+    signedAt: str | None = None
+    signerIp: str | None = None
+    otpVerified: bool = False
+    signatureImage: str | None = None
+    geo: str | None = None
+    verifyCode: str | None = None
+    auditTrail: list[AuditLine] = Field(default_factory=list)
+    agreementId: str | None = None
+
+
+class LetterRequest(BaseModel):
+    kind: str = "offer"
+    company: dict = Field(default_factory=dict)
+    employeeName: str
+    designation: str | None = None
+    department: str | None = None
+    joiningDate: str | None = None
+    ctc: str | None = None
+    reportingManager: str | None = None
+    fromDate: str | None = None
+    toDate: str | None = None
+    signatory: str | None = None
+    letterId: str | None = None
+    issuedAt: str | None = None
+
+
+class SalarySlipRequest(BaseModel):
+    company: dict = Field(default_factory=dict)
+    employeeName: str
+    empCode: str | None = None
+    designation: str | None = None
+    month: str
+    earnings: dict = Field(default_factory=dict)
+    deductions: dict = Field(default_factory=dict)
+    gross: str = "0.00"
+    totalDeductions: str = "0.00"
+    net: str = "0.00"
+    slipId: str | None = None
+    generatedAt: str | None = None

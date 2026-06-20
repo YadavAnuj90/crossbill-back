@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  @page { size: A4; margin: 28mm 18mm; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1a1f24; font-size: 12px; line-height: 1.6; }
+  .brand { font-size: 18px; font-weight: 700; color: #0b5; letter-spacing: -0.3px; }
+  .muted { color: #6b7280; }
+  .title { font-size: 20px; font-weight: 700; margin: 6px 0 2px; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; background: #eef7f1; color: #0b5; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .divider { height: 1px; background: #e5e7eb; margin: 16px 0; }
+  .body { white-space: pre-wrap; font-size: 12.5px; }
+  .parties td { padding: 3px 0; vertical-align: top; }
+  .sigblock { margin-top: 28px; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; }
+  .sigimg { max-height: 70px; max-width: 240px; }
+  .signame { font-weight: 700; font-size: 14px; }
+  .audit { margin-top: 22px; }
+  .audit h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin: 0 0 6px; }
+  .audit table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+  .audit td { padding: 4px 6px; border-bottom: 1px solid #f0f2f4; }
+  .audit td:first-child { color: #6b7280; white-space: nowrap; width: 150px; }
+  .verified { color: #0b5; font-weight: 600; }
+  .footer { margin-top: 18px; font-size: 9.5px; color: #9ca3af; }
+</style>
+</head>
+<body>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div>
+      <div class="brand">Crossbill</div>
+      <div class="title">{{ inv.title }}</div>
+      <span class="pill">{{ inv.category }}</span>
+    </div>
+    <div style="text-align:right" class="muted">
+      {% if inv.signedAt %}<div>Signed: {{ inv.signedAt }}</div>{% endif %}
+      {% if inv.agreementId %}<div>Ref: {{ inv.agreementId[:10] }}</div>{% endif %}
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <table class="parties">
+    <tr><td class="muted" style="width:90px">Between</td><td><strong>{{ inv.sellerName or 'Service provider' }}</strong></td></tr>
+    <tr><td class="muted">And</td><td><strong>{{ inv.clientName or inv.signerName or 'Client' }}</strong></td></tr>
+  </table>
+
+  <div class="divider"></div>
+
+  <div class="body">{{ inv.body }}</div>
+
+  {% if inv.signatureImage %}
+  <div class="sigblock">
+    <div class="muted" style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em">Electronically signed by</div>
+    <div class="signame">{{ inv.signerName }}</div>
+    {% if inv.signerEmail %}<div class="muted">{{ inv.signerEmail }}</div>{% endif %}
+    <img class="sigimg" src="{{ inv.signatureImage }}" alt="signature" />
+    <div class="muted" style="font-size:10px">
+      Signed on {{ inv.signedAt }} from IP {{ inv.signerIp }}
+      {% if inv.otpVerified %}· <span class="verified">Email-OTP verified</span>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if inv.auditTrail %}
+  <div class="audit">
+    <h4>Audit trail</h4>
+    <table>
+      {% for a in inv.auditTrail %}
+      <tr><td>{{ a.at }}</td><td><strong>{{ a.event }}</strong>{% if a.detail %} — {{ a.detail }}{% endif %}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+
+  <div class="footer">
+    This document was executed electronically via Crossbill. The electronic signature and audit trail above
+    constitute a valid electronic record under the Information Technology Act, 2000.
+  </div>
+</body>
+</html>

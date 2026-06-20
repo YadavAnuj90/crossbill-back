@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1a1f24; font-size: 12px; position: relative; }
+
+  /* Per-page diagonal watermark (position:fixed repeats on every page in WeasyPrint). */
+  .watermark { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden; }
+  .watermark span {
+    position: absolute; white-space: nowrap; transform: rotate(-30deg);
+    font-size: 30px; font-weight: 800; color: rgba(11, 90, 60, 0.06);
+    letter-spacing: 4px; text-transform: uppercase;
+  }
+  .content { position: relative; z-index: 1; }
+
+  .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0b5; padding-bottom: 10px; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand img { max-height: 38px; max-width: 120px; }
+  .brand .name { font-size: 17px; font-weight: 700; color: #0b5; }
+  .brand .addr { font-size: 10px; color: #6b7280; max-width: 240px; }
+  .doc-title { text-align: right; }
+  .doc-title h1 { font-size: 16px; margin: 0; }
+  .doc-title .muted { color: #6b7280; font-size: 11px; }
+
+  .emp { margin: 14px 0; display: flex; gap: 28px; font-size: 12px; }
+  .emp .k { color: #6b7280; }
+  .emp .v { font-weight: 600; }
+
+  table.amt { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  table.amt th { text-align: left; background: #f3f6f4; padding: 7px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #374151; }
+  table.amt td { padding: 6px 10px; border-bottom: 1px solid #eef1f0; }
+  table.amt td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .cols { display: flex; gap: 18px; }
+  .cols > div { flex: 1; }
+
+  .totals { margin-top: 16px; margin-left: auto; width: 56%; }
+  .totals .row { display: flex; justify-content: space-between; padding: 5px 10px; font-size: 12px; }
+  .totals .net { background: #0b5; color: #fff; border-radius: 8px; font-weight: 700; font-size: 14px; padding: 9px 12px; }
+
+  .foot { margin-top: 22px; font-size: 9.5px; color: #9ca3af; border-top: 1px solid #eef1f0; padding-top: 8px; }
+</style>
+</head>
+<body>
+  <div class="watermark">
+    {% set wm = (inv.company.get('name') or 'CONFIDENTIAL') ~ ' · CONFIDENTIAL' %}
+    {% for r in range(6) %}
+      {% for c in range(3) %}
+        <span style="top: {{ r * 18 }}%; left: {{ c * 38 - 5 }}%;">{{ wm }}</span>
+      {% endfor %}
+    {% endfor %}
+  </div>
+
+  <div class="content">
+    <div class="head">
+      <div class="brand">
+        {% if inv.company.get('logoUrl') %}<img src="{{ inv.company.logoUrl }}" alt="logo" />{% endif %}
+        <div>
+          <div class="name">{{ inv.company.get('name') or 'Company' }}</div>
+          {% if inv.company.get('address') %}<div class="addr">{{ inv.company.address }}</div>{% endif %}
+        </div>
+      </div>
+      <div class="doc-title">
+        <h1>Salary Slip</h1>
+        <div class="muted">Pay period · {{ inv.month }}</div>
+      </div>
+    </div>
+
+    <div class="emp">
+      <div><span class="k">Employee</span><br/><span class="v">{{ inv.employeeName }}</span></div>
+      {% if inv.empCode %}<div><span class="k">Employee ID</span><br/><span class="v">{{ inv.empCode }}</span></div>{% endif %}
+      {% if inv.designation %}<div><span class="k">Designation</span><br/><span class="v">{{ inv.designation }}</span></div>{% endif %}
+    </div>
+
+    <div class="cols">
+      <div>
+        <table class="amt">
+          <tr><th>Earnings</th><th class="num">Amount (₹)</th></tr>
+          <tr><td>Basic</td><td class="num">{{ inv.earnings.get('basic', '0.00') }}</td></tr>
+          <tr><td>HRA</td><td class="num">{{ inv.earnings.get('hra', '0.00') }}</td></tr>
+          <tr><td>Bonus</td><td class="num">{{ inv.earnings.get('bonus', '0.00') }}</td></tr>
+          <tr><td>Allowances</td><td class="num">{{ inv.earnings.get('allowances', '0.00') }}</td></tr>
+        </table>
+      </div>
+      <div>
+        <table class="amt">
+          <tr><th>Deductions</th><th class="num">Amount (₹)</th></tr>
+          <tr><td>Provident Fund (PF)</td><td class="num">{{ inv.deductions.get('pf', '0.00') }}</td></tr>
+          <tr><td>ESIC</td><td class="num">{{ inv.deductions.get('esic', '0.00') }}</td></tr>
+          <tr><td>TDS</td><td class="num">{{ inv.deductions.get('tds', '0.00') }}</td></tr>
+          <tr><td>Other</td><td class="num">{{ inv.deductions.get('other', '0.00') }}</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="totals">
+      <div class="row"><span>Gross earnings</span><strong>₹ {{ inv.gross }}</strong></div>
+      <div class="row"><span>Total deductions</span><strong>₹ {{ inv.totalDeductions }}</strong></div>
+      <div class="row net"><span>Net pay</span><span>₹ {{ inv.net }}</span></div>
+    </div>
+
+    <div class="foot">
+      This is a system-generated salary slip from {{ inv.company.get('name') or 'Crossbill' }} and does not require a signature.
+      Generated {{ inv.generatedAt }}. Ref {{ inv.slipId }}.
+    </div>
+  </div>
+</body>
+</html>

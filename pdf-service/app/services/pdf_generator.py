@@ -32,3 +32,30 @@ def render_invoice_html(payload: dict) -> str:
 def render_invoice_pdf(payload: dict) -> bytes:
     from weasyprint import HTML  # noqa: WPS433 (lazy import — heavy native deps)
     return HTML(string=render_invoice_html(payload)).write_pdf()
+
+
+def render_agreement_html(payload: dict) -> str:
+    return _env.get_template("agreement.html").render(inv=payload)
+
+
+def render_agreement_pdf(payload: dict) -> bytes:
+    from weasyprint import HTML  # noqa: WPS433
+    return HTML(string=render_agreement_html(payload)).write_pdf()
+
+
+def render_salary_slip_html(payload: dict) -> str:
+    return _env.get_template("salary_slip.html").render(inv=payload)
+
+
+def render_salary_slip_pdf(payload: dict) -> bytes:
+    from weasyprint import HTML  # noqa: WPS433
+    return HTML(string=render_salary_slip_html(payload)).write_pdf()
+
+
+def render_letter_html(payload: dict) -> str:
+    return _env.get_template("letter.html").render(inv=payload)
+
+
+def render_letter_pdf(payload: dict) -> bytes:
+    from weasyprint import HTML  # noqa: WPS433
+    return HTML(string=render_letter_html(payload)).write_pdf()
