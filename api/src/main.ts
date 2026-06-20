@@ -11,7 +11,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { setupSwagger } from './common/swagger/swagger.setup';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: false });
+  const app = await NestFactory.create(AppModule, { bufferLogs: false, rawBody: true });
   const config = app.get(ConfigService);
 
   app.setGlobalPrefix('api/v1');

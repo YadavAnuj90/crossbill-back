@@ -29,6 +29,55 @@ export interface InvoicePdfRequest {
   items: Array<Record<string, unknown>>;
 }
 
+export interface AgreementPdfRequest {
+  title: string;
+  category: string;
+  body: string;
+  sellerName?: string | null;
+  clientName?: string | null;
+  signerName?: string | null;
+  signerEmail?: string | null;
+  signedAt?: string;
+  signerIp?: string;
+  otpVerified?: boolean;
+  signatureImage?: string;
+  geo?: string | null;
+  verifyCode?: string | null;
+  auditTrail?: Array<{ at: string; event: string; detail: string | null }>;
+  agreementId?: string;
+}
+
+export interface SalarySlipPdfRequest {
+  company: { name: string; logoUrl?: string | null; address?: string | null };
+  employeeName: string;
+  empCode?: string | null;
+  designation?: string | null;
+  month: string;
+  earnings: { basic: string; hra: string; bonus: string; allowances: string };
+  deductions: { pf: string; esic: string; tds: string; other: string };
+  gross: string;
+  totalDeductions: string;
+  net: string;
+  slipId?: string;
+  generatedAt?: string;
+}
+
+export interface LetterPdfRequest {
+  kind: string; // offer | experience | relieving
+  company: { name: string; logoUrl?: string | null; address?: string | null };
+  employeeName: string;
+  designation?: string | null;
+  department?: string | null;
+  joiningDate?: string | null;
+  ctc?: string | null;
+  reportingManager?: string | null;
+  fromDate?: string | null;
+  toDate?: string | null;
+  signatory?: string | null;
+  letterId?: string;
+  issuedAt?: string;
+}
+
 /** Server-to-server client to the Python pdf-service (design §6, §9), internal-token auth. */
 @Injectable()
 export class PdfServiceClient {
@@ -50,6 +99,36 @@ export class PdfServiceClient {
     } catch (err: any) {
       this.logger.error(`pdf-service invoice generation failed: ${err.message}`);
       throw new HttpException('PDF generation failed', 502);
+    }
+  }
+
+  async generateAgreement(payload: AgreementPdfRequest): Promise<{ url: string }> {
+    try {
+      const { data } = await this.http.post('/generate/agreement', payload);
+      return data;
+    } catch (err: any) {
+      this.logger.error(`pdf-service agreement generation failed: ${err.message}`);
+      throw new HttpException('Agreement PDF generation failed', 502);
+    }
+  }
+
+  async generateLetter(payload: LetterPdfRequest): Promise<{ url: string }> {
+    try {
+      const { data } = await this.http.post('/generate/letter', payload);
+      return data;
+    } catch (err: any) {
+      this.logger.error(`pdf-service letter generation failed: ${err.message}`);
+      throw new HttpException('Letter PDF generation failed', 502);
+    }
+  }
+
+  async generateSalarySlip(payload: SalarySlipPdfRequest): Promise<{ url: string }> {
+    try {
+      const { data } = await this.http.post('/generate/salary-slip', payload);
+      return data;
+    } catch (err: any) {
+      this.logger.error(`pdf-service salary slip generation failed: ${err.message}`);
+      throw new HttpException('Salary slip PDF generation failed', 502);
     }
   }
 

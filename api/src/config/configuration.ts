@@ -29,6 +29,20 @@ export default () => ({
     internalToken: process.env.INTERNAL_SERVICE_TOKEN ?? 'dev-internal-token',
   },
 
+  esign: {
+    provider: process.env.ESIGN_PROVIDER ?? '',
+    apiKey: process.env.ESIGN_API_KEY ?? '',
+    apiSecret: process.env.ESIGN_API_SECRET ?? '',
+  },
+  estamp: {
+    apiKey: process.env.ESTAMP_API_KEY ?? '',
+  },
+  razorpay: {
+    keyId: process.env.RAZORPAY_KEY_ID ?? '',
+    keySecret: process.env.RAZORPAY_KEY_SECRET ?? '',
+    webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET ?? '',
+  },
+
   email: {
     resendApiKey: process.env.RESEND_API_KEY ?? '',
     from: process.env.EMAIL_FROM ?? 'Crossbill <no-reply@crossbill.app>',
