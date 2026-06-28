@@ -52,8 +52,24 @@ export class SalarySlip {
 
   @Prop({ type: String, default: null })
   generatedAt: string | null;
+
+  @Prop({ type: String, default: null })
+  finalisedAt: string | null;
+
+  @Prop({ type: String, default: null })
+  finalisedBy: string | null;
 }
 
 export const SalarySlipSchema = SchemaFactory.createForClass(SalarySlip);
+
+// Additive computed aliases — exposed in API responses without altering stored
+// shape (frontend keeps reading gross/net/totalDeductions; these are extras).
+SalarySlipSchema.virtual('grossEarnings').get(function (this: SalarySlip) {
+  return this.gross;
+});
+SalarySlipSchema.virtual('netPay').get(function (this: SalarySlip) {
+  return this.net;
+});
+
 SalarySlipSchema.index({ orgId: 1, employeeId: 1, month: 1 }, { unique: true });
 SalarySlipSchema.index({ orgId: 1, month: 1 });

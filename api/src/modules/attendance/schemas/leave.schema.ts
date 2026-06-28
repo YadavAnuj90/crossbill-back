@@ -37,6 +37,10 @@ export class Leave {
   @Prop({ type: String, default: null })
   approverId: string | null;
 
+  /** User id of the approver/rejecter (mirrors approverId; explicit per spec). */
+  @Prop({ type: String, default: null })
+  decidedBy: string | null;
+
   @Prop({ type: String, default: null })
   decidedAt: string | null;
 }
@@ -44,3 +48,4 @@ export class Leave {
 export const LeaveSchema = SchemaFactory.createForClass(Leave);
 LeaveSchema.index({ orgId: 1, status: 1, createdAt: -1 });
 LeaveSchema.index({ orgId: 1, employeeId: 1 });
+LeaveSchema.index({ orgId: 1, employeeId: 1, status: 1 });

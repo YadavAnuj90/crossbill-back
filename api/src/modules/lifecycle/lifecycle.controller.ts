@@ -4,7 +4,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '../../common/constants/roles.enum';
 import { CurrentUser, AuthPrincipal } from '../../common/decorators/current-user.decorator';
 import { LifecycleService } from './lifecycle.service';
-import { CreateExitDto, UpdateExitDto, ToggleChecklistDto } from './dto/lifecycle.dto';
+import { CreateExitDto, UpdateExitDto, ToggleChecklistDto, ExitListQueryDto } from './dto/lifecycle.dto';
 import { BEARER_AUTH_NAME } from '../../common/swagger/swagger.setup';
 
 @ApiTags('Onboarding & exit')
@@ -24,21 +24,21 @@ export class LifecycleController {
   @Patch('onboarding/:employeeId/items/:itemId')
   @Roles(Role.OWNER, Role.ADMIN, Role.HR_ADMIN)
   toggleItem(@CurrentUser() user: AuthPrincipal, @Param('employeeId') employeeId: string, @Param('itemId') itemId: string, @Body() dto: ToggleChecklistDto) {
-    return this.svc.toggleChecklist(user.orgId, employeeId, itemId, dto);
+    return this.svc.toggleChecklist(user.orgId, user.userId, employeeId, itemId, dto);
   }
 
   // ── Exit ──
   @Get('exits')
   @Roles(Role.OWNER, Role.ADMIN, Role.HR_ADMIN, Role.ACCOUNTANT)
-  list(@CurrentUser() user: AuthPrincipal, @Query('status') status?: string) {
-    return this.svc.list(user.orgId, status);
+  list(@CurrentUser() user: AuthPrincipal, @Query() query: ExitListQueryDto) {
+    return this.svc.list(user.orgId, query.status, query.q);
   }
 
   @Post('exits')
   @ApiOperation({ summary: 'Initiate an employee exit' })
   @Roles(Role.OWNER, Role.ADMIN, Role.HR_ADMIN)
   create(@CurrentUser() user: AuthPrincipal, @Body() dto: CreateExitDto) {
-    return this.svc.createExit(user.orgId, dto);
+    return this.svc.createExit(user.orgId, user.userId, dto);
   }
 
   @Get('exits/:id')
@@ -50,6 +50,6 @@ export class LifecycleController {
   @Patch('exits/:id')
   @Roles(Role.OWNER, Role.ADMIN, Role.HR_ADMIN, Role.MANAGER)
   update(@CurrentUser() user: AuthPrincipal, @Param('id') id: string, @Body() dto: UpdateExitDto) {
-    return this.svc.updateExit(user.orgId, id, dto);
+    return this.svc.updateExit(user.orgId, user.userId, id, dto);
   }
 }

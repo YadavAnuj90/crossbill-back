@@ -25,6 +25,9 @@ export class PayrollRun {
 
   @Prop({ type: String, default: null })
   finalisedAt: string | null;
+
+  @Prop({ type: String, default: null })
+  finalisedBy: string | null;
 }
 
 export const PayrollRunSchema = SchemaFactory.createForClass(PayrollRun);

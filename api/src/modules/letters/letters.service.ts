@@ -1,12 +1,21 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { HrLetter, HrLetterDocument } from './schemas/hr-letter.schema';
+import { HrLetter, HrLetterDocument, LetterStatus } from './schemas/hr-letter.schema';
 import { CreateLetterDto } from './dto/letter.dto';
 import { EmployeesService } from '../employees/employees.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { PdfServiceClient } from '../reports/clients/pdf-service.client';
 import { AuditService } from '../audit/audit.service';
+
+/** Allowed status transitions for an HR letter. Same-status is treated as a no-op. */
+const STATUS_TRANSITIONS: Record<LetterStatus, LetterStatus[]> = {
+  draft: ['sent', 'expired'],
+  sent: ['accepted', 'rejected', 'expired'],
+  accepted: [],
+  rejected: [],
+  expired: [],
+};
 
 @Injectable()
 export class LettersService {
@@ -20,7 +29,7 @@ export class LettersService {
     private readonly audit: AuditService,
   ) {}
 
-  async create(orgId: string, dto: CreateLetterDto) {
+  async create(orgId: string, userId: string, dto: CreateLetterDto) {
     const emp = await this.employees.findOneScoped(orgId, dto.employeeId);
     const name = `${emp.firstName} ${emp.lastName ?? ''}`.trim();
     const doc = await this.letters.create({
@@ -34,7 +43,7 @@ export class LettersService {
       toDate: dto.toDate ?? null,
     });
     await this.generatePdf(orgId, doc);
-    await this.audit.log({ action: 'letter.created', orgId, resourceId: doc.id, meta: { kind: dto.kind, employeeId: dto.employeeId } });
+    await this.audit.log({ action: 'letter.created', orgId, userId, resourceId: doc.id, meta: { kind: dto.kind, employeeId: dto.employeeId } });
     return doc.toJSON();
   }
 
@@ -60,10 +69,11 @@ export class LettersService {
     }
   }
 
-  list(orgId: string, kind?: string, employeeId?: string) {
+  list(orgId: string, kind?: string, employeeId?: string, status?: string) {
     const filter: Record<string, any> = { orgId };
     if (kind) filter.kind = kind;
     if (employeeId) filter.employeeId = employeeId;
+    if (status) filter.status = status;
     return this.letters.find(filter).sort({ createdAt: -1 }).limit(500).exec().then((r) => r.map((l) => l.toJSON()));
   }
 
@@ -74,21 +84,35 @@ export class LettersService {
     return l.toJSON();
   }
 
-  async setStatus(orgId: string, id: string, status: 'sent' | 'accepted' | 'rejected' | 'expired') {
+  async setStatus(orgId: string, userId: string, id: string, status: LetterStatus) {
     const l = await this.letters.findOne({ _id: id, orgId }).exec();
     if (!l) throw new NotFoundException('Letter not found');
-    l.status = status;
-    if (status === 'sent') l.sentAt = new Date().toISOString();
-    if (status === 'accepted' || status === 'rejected') l.decidedAt = new Date().toISOString();
-    await l.save();
-    await this.audit.log({ action: `letter.${status}`, orgId, resourceId: id });
+
+    const from = l.status;
+    if (from !== status) {
+      if (!STATUS_TRANSITIONS[from]?.includes(status)) {
+        throw new BadRequestException(`Invalid letter status transition: ${from} -> ${status}`);
+      }
+      if (status === 'sent' && !l.pdfUrl && !l.generatedAt) {
+        throw new BadRequestException('Generate the letter PDF before sending.');
+      }
+
+      l.status = status;
+      const now = new Date().toISOString();
+      if (status === 'sent') l.sentAt = now;
+      if (status === 'accepted' || status === 'rejected') l.decidedAt = now;
+      await l.save();
+      await this.audit.log({ action: 'letter.status_changed', orgId, userId, resourceId: id, meta: { from, to: status, kind: l.kind } });
+    }
     return l.toJSON();
   }
 
-  async remove(orgId: string, id: string) {
-    const res = await this.letters.deleteOne({ _id: id, orgId }).exec();
-    if (!res.deletedCount) throw new NotFoundException('Letter not found');
-    await this.audit.log({ action: 'letter.deleted', orgId, resourceId: id });
+  async remove(orgId: string, userId: string, id: string) {
+    const l = await this.letters.findOne({ _id: id, orgId }).exec();
+    if (!l) throw new NotFoundException('Letter not found');
+    const kind = l.kind;
+    await this.letters.deleteOne({ _id: id, orgId }).exec();
+    await this.audit.log({ action: 'letter.removed', orgId, userId, resourceId: id, meta: { kind } });
     return { deleted: true };
   }
 }

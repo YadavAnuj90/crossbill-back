@@ -77,4 +77,8 @@ export class Employee {
 
 export const EmployeeSchema = SchemaFactory.createForClass(Employee);
 EmployeeSchema.index({ orgId: 1, empCode: 1 }, { unique: true });
+EmployeeSchema.index(
+  { orgId: 1, email: 1 },
+  { unique: true, partialFilterExpression: { email: { $type: 'string' } } },
+);
 EmployeeSchema.index({ orgId: 1, status: 1, createdAt: -1 });

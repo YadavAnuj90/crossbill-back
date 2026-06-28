@@ -1,10 +1,11 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { Role } from '../../common/constants/roles.enum';
+import { Role, HR_MANAGE_ROLES } from '../../common/constants/roles.enum';
 import { CurrentUser, AuthPrincipal } from '../../common/decorators/current-user.decorator';
 import { LettersService } from './letters.service';
-import { CreateLetterDto, LetterDecisionDto } from './dto/letter.dto';
+import { CreateLetterDto, LetterDecisionDto, ListLettersQueryDto } from './dto/letter.dto';
+import { LetterStatus } from './schemas/hr-letter.schema';
 import { BEARER_AUTH_NAME } from '../../common/swagger/swagger.setup';
 
 @ApiTags('HR letters')
@@ -15,15 +16,15 @@ export class LettersController {
 
   @Get()
   @Roles(Role.OWNER, Role.ADMIN, Role.HR_ADMIN, Role.ACCOUNTANT)
-  list(@CurrentUser() user: AuthPrincipal, @Query('kind') kind?: string, @Query('employeeId') employeeId?: string) {
-    return this.letters.list(user.orgId, kind, employeeId);
+  list(@CurrentUser() user: AuthPrincipal, @Query() query: ListLettersQueryDto) {
+    return this.letters.list(user.orgId, query.kind, query.employeeId, query.status);
   }
 
   @Post()
   @ApiOperation({ summary: 'Generate an offer/experience/relieving letter' })
-  @Roles(Role.OWNER, Role.ADMIN, Role.HR_ADMIN)
+  @Roles(...HR_MANAGE_ROLES)
   create(@CurrentUser() user: AuthPrincipal, @Body() dto: CreateLetterDto) {
-    return this.letters.create(user.orgId, dto);
+    return this.letters.create(user.orgId, user.userId, dto);
   }
 
   @Get(':id')
@@ -33,14 +34,14 @@ export class LettersController {
   }
 
   @Patch(':id/status')
-  @Roles(Role.OWNER, Role.ADMIN, Role.HR_ADMIN)
+  @Roles(...HR_MANAGE_ROLES)
   setStatus(@CurrentUser() user: AuthPrincipal, @Param('id') id: string, @Body() dto: LetterDecisionDto) {
-    return this.letters.setStatus(user.orgId, id, dto.status);
+    return this.letters.setStatus(user.orgId, user.userId, id, dto.status as LetterStatus);
   }
 
   @Delete(':id')
-  @Roles(Role.OWNER, Role.ADMIN, Role.HR_ADMIN)
+  @Roles(...HR_MANAGE_ROLES)
   remove(@CurrentUser() user: AuthPrincipal, @Param('id') id: string) {
-    return this.letters.remove(user.orgId, id);
+    return this.letters.remove(user.orgId, user.userId, id);
   }
 }

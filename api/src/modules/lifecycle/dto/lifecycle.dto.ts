@@ -35,3 +35,12 @@ export class UpdateExitDto {
   @ApiPropertyOptional({ description: 'ISO last working day' }) @IsOptional() @IsISO8601() lastWorkingDate?: string;
   @ApiPropertyOptional({ enum: ['initiated', 'notice', 'cleared', 'settled'] }) @IsOptional() @IsIn(['initiated', 'notice', 'cleared', 'settled']) status?: string;
 }
+
+// ── Exit list filters (additive; keeps the array response shape) ──
+export class ExitListQueryDto {
+  @ApiPropertyOptional({ enum: ['initiated', 'notice', 'cleared', 'settled'] })
+  @IsOptional() @IsIn(['initiated', 'notice', 'cleared', 'settled']) status?: string;
+
+  @ApiPropertyOptional({ description: 'Case-insensitive employee name search' })
+  @IsOptional() @IsString() @MaxLength(120) q?: string;
+}

@@ -1,7 +1,10 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsMongoId, IsOptional, IsString, Matches } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { IsIn, IsMongoId, IsOptional, Matches } from 'class-validator';
 
 const MONEY = /^\d{1,12}(\.\d{1,2})?$/;
+const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+const SLIP_STATUSES = ['draft', 'finalised', 'shared'] as const;
+const RUN_STATUSES = ['draft', 'finalised'] as const;
 
 export class CreateSlipDto {
   @ApiProperty()
@@ -9,7 +12,7 @@ export class CreateSlipDto {
   employeeId: string;
 
   @ApiProperty({ example: '2026-06', description: 'Pay month (YYYY-MM)' })
-  @Matches(/^\d{4}-\d{2}$/, { message: 'month must be YYYY-MM' })
+  @Matches(MONTH, { message: 'month must be YYYY-MM' })
   month: string;
 
   @ApiPropertyOptional({ example: '50000.00' }) @IsOptional() @Matches(MONEY) basic?: string;
@@ -22,8 +25,35 @@ export class CreateSlipDto {
   @ApiPropertyOptional() @IsOptional() @Matches(MONEY) otherDeductions?: string;
 }
 
+/** Updates may not change identity (employee/month); only money components. */
+export class UpdateSlipDto extends PartialType(CreateSlipDto) {
+  @ApiPropertyOptional({ enum: SLIP_STATUSES })
+  @IsOptional()
+  @IsIn(SLIP_STATUSES as unknown as string[])
+  status?: string;
+}
+
 export class RunPayrollDto {
   @ApiProperty({ example: '2026-06' })
-  @Matches(/^\d{4}-\d{2}$/, { message: 'period must be YYYY-MM' })
+  @Matches(MONTH, { message: 'period must be YYYY-MM' })
   period: string;
+}
+
+/** Additive read filters for GET /payroll/slips. */
+export class ListSlipsQueryDto {
+  @ApiPropertyOptional() @IsOptional() @IsMongoId() employeeId?: string;
+  @ApiPropertyOptional({ example: '2026-06' }) @IsOptional() @Matches(MONTH) month?: string;
+  @ApiPropertyOptional({ enum: SLIP_STATUSES })
+  @IsOptional()
+  @IsIn(SLIP_STATUSES as unknown as string[])
+  status?: string;
+}
+
+/** Additive read filters for GET /payroll/runs. */
+export class ListRunsQueryDto {
+  @ApiPropertyOptional({ example: '2026-06' }) @IsOptional() @Matches(MONTH) month?: string;
+  @ApiPropertyOptional({ enum: RUN_STATUSES })
+  @IsOptional()
+  @IsIn(RUN_STATUSES as unknown as string[])
+  status?: string;
 }

@@ -1,10 +1,23 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException, ConflictException, Injectable, NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Employee, EmployeeDocument } from './schemas/employee.schema';
+import { Employee, EmployeeDocument, EmployeeStatus } from './schemas/employee.schema';
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto/employee.dto';
 import { AuditService } from '../audit/audit.service';
 import { PaginationDto, Paginated } from '../../common/dto/pagination.dto';
+
+/** Valid forward-only status transitions (same-status no-op is always allowed). */
+const STATUS_TRANSITIONS: Record<EmployeeStatus, EmployeeStatus[]> = {
+  onboarding: ['active'],
+  active: ['on_notice', 'exited'],
+  on_notice: ['exited'],
+  exited: [],
+};
+
+/** Statuses that must be exited/deactivated before a hard delete is permitted. */
+const UNDELETABLE_STATUSES: EmployeeStatus[] = ['active', 'on_notice'];
 
 @Injectable()
 export class EmployeesService {
@@ -13,11 +26,39 @@ export class EmployeesService {
     private readonly audit: AuditService,
   ) {}
 
-  async create(orgId: string, dto: CreateEmployeeDto) {
-    const existing = await this.employees.findOne({ orgId, empCode: dto.empCode }).exec();
-    if (existing) throw new BadRequestException(`Employee ID "${dto.empCode}" already exists`);
-    const doc = await this.employees.create({ orgId, ...dto });
-    await this.audit.log({ action: 'employee.created', orgId, resourceId: doc.id, meta: { empCode: doc.empCode } });
+  private assertTransition(from: EmployeeStatus, to: EmployeeStatus): void {
+    if (from === to) return;
+    if (!STATUS_TRANSITIONS[from]?.includes(to)) {
+      throw new BadRequestException(`Invalid status transition: ${from} → ${to}`);
+    }
+  }
+
+  /** Maps a Mongo duplicate-key error to a clean ConflictException. */
+  private toDuplicateError(err: any): never {
+    const key = err?.keyPattern ?? {};
+    if ('email' in key) throw new ConflictException('An employee with this email already exists');
+    if ('empCode' in key) throw new ConflictException('An employee with this Employee ID already exists');
+    throw new ConflictException('An employee with these details already exists');
+  }
+
+  async create(orgId: string, dto: CreateEmployeeDto, userId?: string) {
+    const codeClash = await this.employees.findOne({ orgId, empCode: dto.empCode }).exec();
+    if (codeClash) throw new ConflictException(`Employee ID "${dto.empCode}" already exists`);
+    if (dto.email) {
+      const emailClash = await this.employees.findOne({ orgId, email: dto.email }).exec();
+      if (emailClash) throw new ConflictException(`An employee with email "${dto.email}" already exists`);
+    }
+    let doc: EmployeeDocument;
+    try {
+      doc = await this.employees.create({ orgId, ...dto });
+    } catch (err: any) {
+      if (err?.code === 11000) this.toDuplicateError(err);
+      throw err;
+    }
+    await this.audit.log({
+      action: 'employee.created', orgId, userId, resourceId: doc.id,
+      meta: { empCode: doc.empCode, status: doc.status },
+    });
     return doc.toJSON();
   }
 
@@ -46,21 +87,48 @@ export class EmployeesService {
     return (await this.findOneScoped(orgId, id)).toJSON();
   }
 
-  async update(orgId: string, id: string, dto: UpdateEmployeeDto) {
-    if (dto.empCode) {
+  async update(orgId: string, id: string, dto: UpdateEmployeeDto, userId?: string) {
+    const current = await this.findOneScoped(orgId, id);
+
+    if (dto.empCode && dto.empCode !== current.empCode) {
       const clash = await this.employees.findOne({ orgId, empCode: dto.empCode, _id: { $ne: id } }).exec();
-      if (clash) throw new BadRequestException(`Employee ID "${dto.empCode}" already exists`);
+      if (clash) throw new ConflictException(`Employee ID "${dto.empCode}" already exists`);
     }
-    const doc = await this.employees.findOneAndUpdate({ _id: id, orgId }, dto, { new: true }).exec();
+    if (dto.email && dto.email !== current.email) {
+      const clash = await this.employees.findOne({ orgId, email: dto.email, _id: { $ne: id } }).exec();
+      if (clash) throw new ConflictException(`An employee with email "${dto.email}" already exists`);
+    }
+    if (dto.status) this.assertTransition(current.status, dto.status as EmployeeStatus);
+
+    let doc: EmployeeDocument | null;
+    try {
+      doc = await this.employees.findOneAndUpdate({ _id: id, orgId }, dto, { new: true }).exec();
+    } catch (err: any) {
+      if (err?.code === 11000) this.toDuplicateError(err);
+      throw err;
+    }
     if (!doc) throw new NotFoundException('Employee not found');
-    await this.audit.log({ action: 'employee.updated', orgId, resourceId: id });
+    await this.audit.log({
+      action: 'employee.updated', orgId, userId, resourceId: id,
+      meta: {
+        empCode: doc.empCode,
+        ...(dto.status && dto.status !== current.status ? { status: doc.status } : {}),
+      },
+    });
     return doc.toJSON();
   }
 
-  async remove(orgId: string, id: string) {
+  async remove(orgId: string, id: string, userId?: string) {
+    const doc = await this.findOneScoped(orgId, id);
+    if (UNDELETABLE_STATUSES.includes(doc.status)) {
+      throw new ConflictException('Exit or deactivate this employee before deleting.');
+    }
     const res = await this.employees.deleteOne({ _id: id, orgId }).exec();
     if (!res.deletedCount) throw new NotFoundException('Employee not found');
-    await this.audit.log({ action: 'employee.deleted', orgId, resourceId: id });
+    await this.audit.log({
+      action: 'employee.deleted', orgId, userId, resourceId: id,
+      meta: { empCode: doc.empCode, status: doc.status },
+    });
     return { deleted: true };
   }
 
