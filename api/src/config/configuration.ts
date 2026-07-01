@@ -37,6 +37,15 @@ export default () => ({
   estamp: {
     apiKey: process.env.ESTAMP_API_KEY ?? '',
   },
+  einvoicing: {
+    // Provider for GST IRN registration. Empty/`sandbox` → built-in sandbox provider.
+    // Set to a licensed GSP (e.g. 'mastergst', 'cleartax', 'irp') once credentials exist.
+    provider: process.env.EINVOICE_PROVIDER ?? 'sandbox',
+    apiBaseUrl: process.env.EINVOICE_API_BASE_URL ?? '',
+    apiUser: process.env.EINVOICE_API_USER ?? '',
+    apiPassword: process.env.EINVOICE_API_PASSWORD ?? '',
+    gstin: process.env.EINVOICE_GSTIN ?? '',
+  },
   razorpay: {
     keyId: process.env.RAZORPAY_KEY_ID ?? '',
     keySecret: process.env.RAZORPAY_KEY_SECRET ?? '',

@@ -23,12 +23,12 @@ export class ConsentsController {
   @Post()
   @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   create(@CurrentUser() user: AuthPrincipal, @Body() dto: CreateConsentDto) {
-    return this.consents.create(user.orgId, dto);
+    return this.consents.create(user.orgId, dto, user.userId);
   }
 
   @Post(':id/withdraw')
   @Roles(Role.OWNER, Role.ADMIN, Role.MEMBER)
   withdraw(@CurrentUser() user: AuthPrincipal, @Param('id') id: string) {
-    return this.consents.withdraw(user.orgId, id);
+    return this.consents.withdraw(user.orgId, id, user.userId);
   }
 }

@@ -58,7 +58,7 @@ export class PaymentsService {
       amountPaise,
       currency: 'INR',
       description: `Payment for invoice ${invoice.number}`,
-      referenceId: `inv_${invoice.id}_${Date.now()}`,
+      referenceId: `inv-${invoice.id}-${Date.now().toString(36)}`, // Razorpay caps reference_id at 40 chars
       customer: client ? { name: client.name, email: client.email ?? undefined } : undefined,
       notes: { orgId, purpose: 'invoice', invoiceId: invoice.id, invoiceNumber: invoice.number },
       callbackUrl: `${this.appUrl}/invoices/${invoice.id}?paid=1`,
@@ -83,7 +83,7 @@ export class PaymentsService {
       amountPaise,
       currency: 'INR',
       description: `Crossbill ${plan.name} plan`,
-      referenceId: `sub_${orgId}_${planId}_${Date.now()}`,
+      referenceId: `sub-${orgId}-${Date.now().toString(36)}`, // planId is carried in notes; keep ≤ 40 chars
       customer: email ? { email } : undefined,
       notes: { orgId, purpose: 'subscription', planId },
       callbackUrl: `${this.appUrl}/billing?upgraded=1`,

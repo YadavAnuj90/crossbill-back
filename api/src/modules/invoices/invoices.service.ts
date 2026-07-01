@@ -70,7 +70,7 @@ export class InvoicesService {
       ...base,
     });
 
-    await this.pdfQueue.add(JOBS.GENERATE_PDF, { invoiceId: saved.id, orgId }, { jobId: `pdf:${saved.id}` });
+    await this.pdfQueue.add(JOBS.GENERATE_PDF, { invoiceId: saved.id, orgId }, { jobId: `pdf-${saved.id}` });
     return saved.toJSON();
   }
 
@@ -152,8 +152,20 @@ export class InvoicesService {
   }
 
   async update(orgId: string, id: string, dto: UpdateInvoiceDto) {
+    const current = await this.invoices.findOne({ _id: id, orgId }).exec();
+    if (!current) throw new NotFoundException('Invoice not found');
+
     const patch: any = {};
-    if (dto.status) patch.status = dto.status;
+    if (dto.status && dto.status !== current.status) {
+      // A settled (paid) invoice is immutable. Transitioning TO paid is allowed —
+      // domestic invoices are marked paid directly; exports are settled via remittances.
+      if (current.status === 'paid') {
+        throw new BadRequestException('A paid invoice is settled and can no longer be changed.');
+      }
+      patch.status = dto.status;
+    }
+
+    if (Object.keys(patch).length === 0) return current.toJSON();
     const invoice = await this.invoices.findOneAndUpdate({ _id: id, orgId }, patch, { new: true }).exec();
     if (!invoice) throw new NotFoundException('Invoice not found');
     return invoice.toJSON();

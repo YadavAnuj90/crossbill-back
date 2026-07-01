@@ -1,11 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsISO8601, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsIn, IsISO8601, IsMongoId, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export const CONSENT_BASES = ['consent', 'contract', 'legal_obligation', 'legitimate_use'] as const;
 
 export class CreateConsentDto {
   @ApiPropertyOptional({ description: 'Client this consent relates to' })
-  @IsOptional() @IsString()
+  @IsOptional() @IsMongoId()
   clientId?: string;
 
   @ApiPropertyOptional({ description: 'Name/email of the data principal if not a stored client' })

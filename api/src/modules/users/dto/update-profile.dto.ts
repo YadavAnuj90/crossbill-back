@@ -1,11 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsOptional, IsString, Length, Matches } from 'class-validator';
+import { IsIn, IsOptional, IsString, Length, Matches, MaxLength } from 'class-validator';
 import { VALID_SAC_CODES } from '../../../common/constants/sac-codes';
 
 /** Business profile fields needed to produce compliant export invoices (design §5, §8). */
 export class UpdateProfileDto {
   @ApiPropertyOptional({ description: 'Registered legal/business name', example: 'Acme Software Exports Pvt Ltd' })
-  @IsOptional() @IsString()
+  @IsOptional() @IsString() @MaxLength(200)
   legalName?: string;
 
   @ApiPropertyOptional({
@@ -20,7 +20,7 @@ export class UpdateProfileDto {
   gstin?: string;
 
   @ApiPropertyOptional({ description: 'Registered business address', example: 'Unit 4, Tech Park, Pune 411057' })
-  @IsOptional() @IsString()
+  @IsOptional() @IsString() @MaxLength(400)
   address?: string;
 
   @ApiPropertyOptional({ description: 'Default SAC code applied to invoice items', enum: [...VALID_SAC_CODES], example: '998314' })

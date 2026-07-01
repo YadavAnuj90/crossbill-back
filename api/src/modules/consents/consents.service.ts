@@ -15,7 +15,7 @@ export class ConsentsService {
     private readonly audit: AuditService,
   ) {}
 
-  async create(orgId: string, dto: CreateConsentDto) {
+  async create(orgId: string, dto: CreateConsentDto, userId?: string) {
     let dataPrincipal = dto.dataPrincipal ?? null;
     if (!dataPrincipal && dto.clientId) {
       const c = await this.clients.findOneScoped(orgId, dto.clientId).catch(() => null);
@@ -32,7 +32,7 @@ export class ConsentsService {
       expiresAt: dto.expiresAt ?? null,
       notes: dto.notes ?? null,
     });
-    await this.audit.log({ action: 'consent.recorded', orgId, resourceId: doc.id, meta: { purpose: doc.purpose, basis: doc.basis } });
+    await this.audit.log({ action: 'consent.recorded', orgId, userId, resourceId: doc.id, meta: { purpose: doc.purpose, basis: doc.basis } });
     return doc.toJSON();
   }
 
@@ -44,14 +44,14 @@ export class ConsentsService {
     return { items: items.map((c) => c.toJSON()), meta: { page: page.page, limit: page.limit, total, totalPages: Math.ceil(total / page.limit) } };
   }
 
-  async withdraw(orgId: string, id: string) {
+  async withdraw(orgId: string, id: string, userId?: string) {
     const doc = await this.consents.findOne({ _id: id, orgId }).exec();
     if (!doc) throw new NotFoundException('Consent not found');
     if (doc.status === 'active') {
       doc.status = 'withdrawn';
       doc.withdrawnAt = new Date().toISOString();
       await doc.save();
-      await this.audit.log({ action: 'consent.withdrawn', orgId, resourceId: doc.id });
+      await this.audit.log({ action: 'consent.withdrawn', orgId, userId, resourceId: doc.id });
     }
     return doc.toJSON();
   }

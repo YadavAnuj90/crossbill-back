@@ -10,6 +10,8 @@ export enum Role {
   HR_ADMIN = 'HR_ADMIN',
   MANAGER = 'MANAGER',
   EMPLOYEE = 'EMPLOYEE',
+  /** Cross-tenant Crossbill staff who approve/reject company verification. Provisioned out-of-band. */
+  PLATFORM_ADMIN = 'PLATFORM_ADMIN',
 }
 
 /** Roles that can manage HR records (employees, attendance, payroll). */

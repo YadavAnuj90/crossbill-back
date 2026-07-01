@@ -2,11 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Organization, OrganizationDocument } from './schemas/organization.schema';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class OrganizationsService {
   constructor(
     @InjectModel(Organization.name) private readonly orgs: Model<OrganizationDocument>,
+    private readonly audit: AuditService,
   ) {}
 
   /** Creates a personal org for a new user; the user becomes its OWNER. */
@@ -51,25 +53,29 @@ export class OrganizationsService {
     return this.companyView(await this.orgs.findById(orgId).exec());
   }
 
-  async updateCompany(orgId: string, patch: Record<string, any>) {
+  async updateCompany(orgId: string, patch: Record<string, any>, userId?: string) {
     const allowed = ['name', 'gstin', 'pan', 'registeredAddress', 'logoUrl', 'website', 'ownerName', 'ownerEmail', 'ownerMobile'];
     const set: Record<string, any> = {};
     for (const k of allowed) if (patch[k] !== undefined) set[k] = patch[k] || null;
     const org = await this.orgs.findByIdAndUpdate(orgId, set, { new: true }).exec();
+    await this.audit.log({
+      action: 'company.updated', orgId, userId, resourceId: orgId, meta: { fields: Object.keys(set) },
+    });
     return this.companyView(org);
   }
 
-  async submitVerification(orgId: string) {
+  async submitVerification(orgId: string, userId?: string) {
     const org = await this.orgs.findByIdAndUpdate(
       orgId,
       { verificationStatus: 'pending', verificationSubmittedAt: new Date().toISOString(), verificationNotes: null },
       { new: true },
     ).exec();
+    await this.audit.log({ action: 'company.verification_submitted', orgId, userId, resourceId: orgId });
     return this.companyView(org);
   }
 
   /** Platform/admin action: approve or reject a company's verification. */
-  async setVerification(orgId: string, status: 'verified' | 'rejected', notes?: string) {
+  async setVerification(orgId: string, status: 'verified' | 'rejected', notes?: string, userId?: string) {
     const org = await this.orgs.findByIdAndUpdate(
       orgId,
       {
@@ -79,6 +85,9 @@ export class OrganizationsService {
       },
       { new: true },
     ).exec();
+    await this.audit.log({
+      action: 'company.verification_decided', orgId, userId, resourceId: orgId, meta: { status, notes: notes ?? null },
+    });
     return this.companyView(org);
   }
 

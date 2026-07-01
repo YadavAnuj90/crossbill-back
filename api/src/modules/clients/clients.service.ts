@@ -5,11 +5,15 @@ import { Client, ClientDocument } from './schemas/client.schema';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { PaginationDto, Paginated } from '../../common/dto/pagination.dto';
+import { AuditService } from '../audit/audit.service';
 
 /** All queries are scoped by orgId (design §10). Supports foreign (export) + domestic (GST) clients. */
 @Injectable()
 export class ClientsService {
-  constructor(@InjectModel(Client.name) private readonly clients: Model<ClientDocument>) {}
+  constructor(
+    @InjectModel(Client.name) private readonly clients: Model<ClientDocument>,
+    private readonly audit: AuditService,
+  ) {}
 
   private normalize(dto: Partial<CreateClientDto>): Record<string, any> {
     const out: Record<string, any> = { ...dto };
@@ -24,8 +28,13 @@ export class ClientsService {
     return out;
   }
 
-  create(orgId: string, dto: CreateClientDto) {
-    return this.clients.create({ ...this.normalize(dto), orgId });
+  async create(orgId: string, dto: CreateClientDto, userId?: string) {
+    const doc = await this.clients.create({ ...this.normalize(dto), orgId });
+    await this.audit.log({
+      action: 'client.created', orgId, userId, resourceId: doc.id,
+      meta: { name: doc.name, type: doc.type },
+    });
+    return doc;
   }
 
   async list(orgId: string, page: PaginationDto): Promise<Paginated<any>> {
@@ -50,14 +59,20 @@ export class ClientsService {
     return this.clients.find({ orgId }).exec();
   }
 
-  async update(orgId: string, id: string, dto: UpdateClientDto) {
+  async update(orgId: string, id: string, dto: UpdateClientDto, userId?: string) {
     const client = await this.clients.findOneAndUpdate({ _id: id, orgId }, this.normalize(dto), { new: true }).exec();
     if (!client) throw new NotFoundException('Client not found');
+    await this.audit.log({
+      action: 'client.updated', orgId, userId, resourceId: id, meta: { name: client.name },
+    });
     return client;
   }
 
-  async remove(orgId: string, id: string): Promise<void> {
-    const res = await this.clients.deleteOne({ _id: id, orgId }).exec();
-    if (res.deletedCount === 0) throw new NotFoundException('Client not found');
+  async remove(orgId: string, id: string, userId?: string): Promise<void> {
+    const doc = await this.findOneScoped(orgId, id);
+    await this.clients.deleteOne({ _id: id, orgId }).exec();
+    await this.audit.log({
+      action: 'client.deleted', orgId, userId, resourceId: id, meta: { name: doc.name },
+    });
   }
 }

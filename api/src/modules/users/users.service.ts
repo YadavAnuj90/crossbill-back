@@ -4,10 +4,14 @@ import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private readonly users: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private readonly users: Model<UserDocument>,
+    private readonly audit: AuditService,
+  ) {}
 
   findByEmail(email: string) {
     return this.users.findOne({ email: email.toLowerCase() }).exec();
@@ -38,6 +42,10 @@ export class UsersService {
   async updateProfile(id: string, dto: UpdateProfileDto): Promise<UserDocument> {
     const user = await this.users.findByIdAndUpdate(id, dto, { new: true }).exec();
     if (!user) throw new NotFoundException('User not found');
+    await this.audit.log({
+      action: 'user.profile_updated', orgId: user.orgId ?? undefined, userId: id, resourceId: id,
+      meta: { fields: Object.keys(dto) },
+    });
     return user;
   }
 

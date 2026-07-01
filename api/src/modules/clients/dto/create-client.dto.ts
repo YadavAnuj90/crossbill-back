@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsIn, IsOptional, IsString, Length, Matches, ValidateIf } from 'class-validator';
+import { IsEmail, IsEnum, IsIn, IsOptional, IsString, Length, Matches, MaxLength, MinLength, ValidateIf } from 'class-validator';
 import { VALID_STATE_CODES } from '../../../common/constants/india-states';
 
 export class CreateClientDto {
@@ -12,7 +12,7 @@ export class CreateClientDto {
   type: 'foreign' | 'domestic';
 
   @ApiProperty({ description: 'Client / company name', example: 'Globex Corporation' })
-  @IsString()
+  @IsString() @MinLength(1) @MaxLength(200)
   name: string;
 
   @ApiPropertyOptional({
@@ -24,7 +24,7 @@ export class CreateClientDto {
   email?: string;
 
   @ApiPropertyOptional({ description: 'Postal address', example: '1 Market St, San Francisco, CA' })
-  @IsOptional() @IsString()
+  @IsOptional() @IsString() @MaxLength(400)
   address?: string;
 
   @ApiPropertyOptional({

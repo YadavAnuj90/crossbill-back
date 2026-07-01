@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-  ArrayMinSize, IsArray, IsDateString, IsIn, IsOptional, IsString,
+  ArrayMinSize, IsArray, IsDateString, IsIn, IsMongoId, IsOptional, IsString,
   Min, ValidateNested, IsNumber,
 } from 'class-validator';
 import { VALID_SAC_CODES } from '../../../common/constants/sac-codes';
@@ -39,7 +39,7 @@ export class InvoiceItemDto {
 
 export class CreateInvoiceDto {
   @ApiProperty({ description: 'Id of an existing client to bill', example: '665f1b2c9a4e1c0012ab34cd' })
-  @IsString()
+  @IsMongoId()
   clientId: string;
 
   @ApiPropertyOptional({

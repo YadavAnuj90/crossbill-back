@@ -54,7 +54,7 @@ export class ClientsController {
   @ApiCreatedResponse({ description: 'Client created', schema: { example: { success: true, data: CLIENT_EXAMPLE } } })
   @ApiValidationErrors()
   create(@CurrentUser() user: AuthPrincipal, @Body() dto: CreateClientDto) {
-    return this.clients.create(user.orgId, dto);
+    return this.clients.create(user.orgId, dto, user.userId);
   }
 
   @Patch(':id')
@@ -69,7 +69,7 @@ export class ClientsController {
     @Param('id') id: string,
     @Body() dto: UpdateClientDto,
   ) {
-    return this.clients.update(user.orgId, id, dto);
+    return this.clients.update(user.orgId, id, dto, user.userId);
   }
 
   @Delete(':id')
@@ -79,6 +79,6 @@ export class ClientsController {
   @ApiOkResponse({ description: 'Client deleted', schema: { example: { success: true, data: { deleted: true } } } })
   @ApiNotFound('Client not found')
   remove(@CurrentUser() user: AuthPrincipal, @Param('id') id: string) {
-    return this.clients.remove(user.orgId, id);
+    return this.clients.remove(user.orgId, id, user.userId);
   }
 }

@@ -17,12 +17,12 @@ export class RemindersScheduler implements OnModuleInit {
     try {
       // FEMA aging: every day at 07:00.
       await this.queue.add(JOBS.FEMA_SWEEP, {}, {
-        repeat: { pattern: '0 7 * * *' }, jobId: 'cron:fema-sweep',
+        repeat: { pattern: '0 7 * * *' }, jobId: 'cron-fema-sweep',
         removeOnComplete: true, removeOnFail: 50,
       });
       // LUT renewal: 06:00 on 1 April.
       await this.queue.add(JOBS.LUT_SWEEP, {}, {
-        repeat: { pattern: '0 6 1 4 *' }, jobId: 'cron:lut-sweep',
+        repeat: { pattern: '0 6 1 4 *' }, jobId: 'cron-lut-sweep',
         removeOnComplete: true, removeOnFail: 50,
       });
       this.logger.log('Compliance sweeps scheduled (FEMA daily 07:00, LUT 1 Apr 06:00).');

@@ -26,6 +26,7 @@ import { PayrollModule } from './modules/payroll/payroll.module';
 import { LettersModule } from './modules/letters/letters.module';
 import { LifecycleModule } from './modules/lifecycle/lifecycle.module';
 import { AadhaarModule } from './modules/aadhaar/aadhaar.module';
+import { EInvoicingModule } from './modules/einvoicing/einvoicing.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { RemittancesModule } from './modules/remittances/remittances.module';
 import { RemindersModule } from './modules/reminders/reminders.module';
@@ -62,6 +63,7 @@ import { HealthModule } from './modules/health/health.module';
     LettersModule,
     LifecycleModule,
     AadhaarModule,
+    EInvoicingModule,
     NotificationsModule,
     AuditModule,
     HealthModule,

@@ -23,20 +23,22 @@ export class CompanyController {
   @ApiOperation({ summary: 'Update company details' })
   @Roles(Role.OWNER, Role.ADMIN)
   update(@CurrentUser() user: AuthPrincipal, @Body() dto: UpdateCompanyDto) {
-    return this.orgs.updateCompany(user.orgId, dto);
+    return this.orgs.updateCompany(user.orgId, dto, user.userId);
   }
 
   @Post('submit')
   @ApiOperation({ summary: 'Submit company for verification (→ pending)' })
   @Roles(Role.OWNER, Role.ADMIN)
   submit(@CurrentUser() user: AuthPrincipal) {
-    return this.orgs.submitVerification(user.orgId);
+    return this.orgs.submitVerification(user.orgId, user.userId);
   }
 
   @Patch('verification')
   @ApiOperation({ summary: 'Approve/reject verification (platform admin)' })
-  @Roles(Role.OWNER)
+  // PLATFORM_ADMIN is the intended approver; OWNER is retained so existing single-tenant
+  // setups keep working until a platform-admin account is provisioned. Remove OWNER to enforce.
+  @Roles(Role.PLATFORM_ADMIN, Role.OWNER)
   setVerification(@CurrentUser() user: AuthPrincipal, @Body() dto: SetVerificationDto) {
-    return this.orgs.setVerification(user.orgId, dto.status, dto.notes);
+    return this.orgs.setVerification(user.orgId, dto.status, dto.notes, user.userId);
   }
 }
